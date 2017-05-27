@@ -1,0 +1,20 @@
+tracer.report-interval  1000
+tracer.database.host    192.168.32.120
+tracer.database.port    2004
+tracer.storage.root     /home/eddie/tracedata/data
+tracer.fetch.enabled    false
+
+tracer.ML.analyzer.enabled	true
+tracer.analysis-mode    simple
+
+tracer.ML.parameter.path	/home/eddie/tracedata/GMMParameter
+tracer.ML.anomaly.possibility-threshold     0.5
+tracer.ML.classify-interval     10000
+
+tracer.simple.parameter.path    /home/eddie/tracedata/simpleParameter
+tracer.simple.parameter.upperThreshold  0.8
+tracer.simple.parameter.lowerThreshold  0.1
+
+tracer.kafka.topic  trace
+tracer.kafka.bootstrap.servers   localhost:9092
+
