@@ -1,20 +1,10 @@
 package Server;
 
-import ML.GMMAlgorithm;
-import ML.GMMUtils;
-import RPCService.TracingService;
-import RPCService.TracingServiceImpl;
+import log.AppLogReader;
+import log.LogReaderManager;
 import org.apache.log4j.BasicConfigurator;
-import org.apache.thrift.TProcessor;
-import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.server.TServer;
-import org.apache.thrift.server.TThreadPoolServer;
-import org.apache.thrift.transport.TServerSocket;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.Map;
 
 /**
  * Created by Eddie on 2017/1/23.
@@ -22,7 +12,15 @@ import java.util.Random;
 public class TracingMaster {
     public static void main(String argv[]) throws Exception {
         BasicConfigurator.configure();
-        Tracer tracer = Tracer.getInstance();
-        tracer.init();
+        //Tracer tracer = Tracer.getInstance();
+        //tracer.init();
+
+        LogReaderManager logReader = new LogReaderManager();
+        logReader.start();
+
+        Thread.sleep(10000);
+        for(Map.Entry<String, AppLogReader> entry: logReader.runningAppsTimeOutCount.entrySet()) {
+            entry.getValue().stopContainerLogReaderById("container_1");
+        }
     }
 }
