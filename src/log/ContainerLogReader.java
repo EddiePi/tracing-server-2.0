@@ -85,9 +85,12 @@ public class ContainerLogReader {
                     while((line = bufferedReader.readLine()) != null) {
                         messageBuffer += (line + "\n");
                     }
-                    //TODO send the message to kafka
-                    //TEST
-                    logSender.send(messageBuffer);
+                    if (messageBuffer.length() != 0) {
+                        //TODO send the message to kafka
+                        //TEST
+                        System.out.print("sending message: " + messageBuffer + "\n");
+                        logSender.send(messageBuffer);
+                    }
                     Thread.sleep(1000);
                 }
             } catch (FileNotFoundException e) {

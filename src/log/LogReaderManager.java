@@ -5,6 +5,8 @@ import Server.TracerConf;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Created by Eddie on 2017/6/6.
@@ -14,8 +16,20 @@ public class LogReaderManager {
     File rootDir;
     File[] applicationDirs;
     Boolean isChecking;
-    public Map<String, AppLogReader> runningAppsTimeOutCount = new HashMap<>();
+    public ConcurrentMap<String, AppLogReader> runningAppsTimeOutCount = new ConcurrentHashMap<>();
     Thread checkingThread;
+
+    public LogReaderManager() {
+        rootDir = new File(conf.getStringOrDefault("tracer.log.root", "~/hadoop-2.7.3/logs/userlogs"));
+        applicationDirs = rootDir.listFiles();
+        if (applicationDirs == null) {
+            applicationDirs = new File[0];
+        }
+        isChecking = true;
+
+        checkingThread = new Thread(new CheckAppDirRunnable());
+
+    }
 
     private class CheckAppDirRunnable implements Runnable {
 
@@ -24,10 +38,16 @@ public class LogReaderManager {
 
         @Override
         public void run() {
+            System.out.print("app checking thread started.\n");
             while (isChecking) {
                 //check new app
                 newDirs = rootDir.listFiles();
                 if (newDirs == null) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     continue;
                 }
                 newAppNum = newDirs.length - applicationDirs.length;
@@ -66,17 +86,7 @@ public class LogReaderManager {
         }
     }
 
-    public LogReaderManager() {
-        rootDir = new File(conf.getStringOrDefault("tracer.log.root-dir", "~/hadoop-2.7.3/logs/userlogs/"));
-        applicationDirs = rootDir.listFiles();
-        if (applicationDirs == null) {
-            applicationDirs = new File[0];
-        }
-        isChecking = true;
 
-        checkingThread = new Thread(new CheckAppDirRunnable());
-
-    }
 
 
 

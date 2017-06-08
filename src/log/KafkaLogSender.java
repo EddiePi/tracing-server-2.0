@@ -35,7 +35,6 @@ public class KafkaLogSender {
 
     public void send(String message) {
         producer.send(new ProducerRecord<String, String>(kafkaTopic, containerId, message));
-        producer.close();
     }
 
     public void close() {

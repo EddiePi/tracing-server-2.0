@@ -14,13 +14,8 @@ public class TracingMaster {
         BasicConfigurator.configure();
         //Tracer tracer = Tracer.getInstance();
         //tracer.init();
-
+        System.out.print("new tracing master\n");
         LogReaderManager logReader = new LogReaderManager();
         logReader.start();
-
-        Thread.sleep(10000);
-        for(Map.Entry<String, AppLogReader> entry: logReader.runningAppsTimeOutCount.entrySet()) {
-            entry.getValue().stopContainerLogReaderById("container_1");
-        }
     }
 }
