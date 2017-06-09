@@ -1,7 +1,5 @@
 package log;
 
-import Server.TracerConf;
-
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
