@@ -29,8 +29,12 @@ public class TracerConf {
     private void getConfFromFile() {
         String path;
         try {
-            //path = "../conf/tracer.conf";
+            File confFile;
             path = "conf/tracer.conf";
+            confFile = new File(path);
+            if (!confFile.exists()) {
+                path = "../conf/tracer.conf";
+            }
             List<String> strings = Utils.FileReader.read(path);
             for(String str: strings) {
                 if(str.isEmpty()) {
@@ -42,8 +46,11 @@ public class TracerConf {
                 String[] result = str.split("\\s+");
                 setting.put(result[0], result[1]);
             }
-            //path = "../conf/machine.conf";
             path = "conf/machine.conf";
+            confFile = new File(path);
+            if (!confFile.exists()) {
+                path = "../conf/machine.conf";
+            }
             strings = Utils.FileReader.read(path);
             for(String str: strings) {
                 if(str.isEmpty()) {
