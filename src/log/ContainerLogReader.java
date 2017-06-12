@@ -84,9 +84,9 @@ public class ContainerLogReader {
                         messageBuffer += (line + "\n");
                     }
                     if (messageBuffer.length() != 0) {
-                        //TODO send the message to kafka
-                        //TEST
-                        System.out.print("sending message: " + messageBuffer + "\n");
+                        // TODO send the message to kafka
+                        // TEST
+                        // System.out.print("sending message: " + messageBuffer + "\n");
                         logSender.send(messageBuffer);
                     }
                     Thread.sleep(1000);

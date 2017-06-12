@@ -63,6 +63,7 @@ class DockerMonitor {
     public void start() {
         isRunning = true;
         monitorThread.start();
+        System.out.print("docker monitor thread started.\n");
         //monitorThread.start();
     }
 
