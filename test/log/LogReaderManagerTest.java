@@ -11,7 +11,6 @@ public class LogReaderManagerTest {
 
     @Test
     public void start() throws Exception {
-        logReader.start();
     }
 
 }

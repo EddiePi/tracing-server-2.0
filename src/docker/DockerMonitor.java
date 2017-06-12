@@ -14,38 +14,55 @@ import java.util.List;
 /**
  * Created by Eddie on 2017/2/15.
  */
-public class DockerMonitor {
+class DockerMonitor {
     TracerConf conf = TracerConf.getInstance();
     private String dockerId;
     String containerId;
-    List<Integer> taksInContainer = new LinkedList<>();
 
     // NOTE: type of dockerPid is String, NOT int
     String dockerPid = null;
     private String blkioPath;
     private String netFilePath;
-    private MonitorThread monitorThread;
+    private String cpuPath;
+    private String memoryPath;
+    private Thread monitorThread;
 
     private String ifaceName;
-    // docker taskMetrics
-    private List<DockerMetrics> metrics;
+    private DockerMetrics previousMetrics;
+    private DockerMetrics currentmMetrics;
     int metricsCount = 0;
 
-    private boolean isRunning;
+    volatile private boolean isRunning;
 
     public DockerMonitor(String containerId) {
         this.containerId = containerId;
-        this.dockerId = runShellCommand("docker inspect --format={{.Id}} " + containerId);
+        for(int i = 0; i < 5; i++) {
+            this.dockerId = runShellCommand("docker inspect --format={{.Id}} " + containerId);
+            if(this.dockerId.contains("Error")) {
+                System.out.print("docker for " + containerId + " is not started yet. retry in 1 sec.\n");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        if(this.dockerId.contains("Error")) {
+            System.out.print("cannot get docker for " + containerId + "aborting\n");
+            return;
+        }
+
         this.dockerPid = runShellCommand("docker inspect --format={{.State.Pid}} " + containerId).trim();
         this.blkioPath= "/sys/fs/cgroup/blkio/docker/" + dockerId + "/";
         this.netFilePath = "/proc/" + dockerPid + "/net/dev";
-        metrics = new ArrayList<>();
+        this.cpuPath = "/sys/fs/cgroup/cpu,cpuacct/docker/" + dockerId + "/";
         ifaceName  = conf.getStringOrDefault("tracer.docker.iface-name", "eth0");
-        monitorThread = new MonitorThread();
+        monitorThread = new Thread(new MonitorRunnable());
     }
 
     public void start() {
         isRunning = true;
+        monitorThread.start();
         //monitorThread.start();
     }
 
@@ -64,14 +81,6 @@ public class DockerMonitor {
 
     public String getDockerPid() {
         return dockerPid;
-    }
-
-    public DockerMetrics getLatestDockerMetrics() {
-        int index = metrics.size() - 1;
-        if (index < 0) {
-            return null;
-        }
-        return metrics.get(index);
     }
 
     // Run a given shell command. return a string as the result
@@ -101,11 +110,10 @@ public class DockerMonitor {
         return shExec.getOutput().trim();
     }
 
-    private class MonitorThread extends Thread {
+    private class MonitorRunnable implements Runnable {
 
         @Override
         public void run(){
-            isRunning = true;
             try {
                 Thread.sleep(1100);
             } catch (InterruptedException e) {
@@ -124,38 +132,81 @@ public class DockerMonitor {
                     //do nothing
                 }
             }
-            isRunning = false;
         }
     }
 
     public void updateCgroupValues() {
-        DockerMetrics m = new DockerMetrics(dockerId, containerId);
+        previousMetrics = currentmMetrics;
+        currentmMetrics = new DockerMetrics(dockerId, containerId);
+
+        // calculate the cpu rate
+        calculateCurrentCpuRate(currentmMetrics);
+
         // calculate the disk rate
-        calculateCurrentDiskRate(m);
+        calculateCurrentDiskRate(currentmMetrics);
 
         // calculate the network rate
-        calculateCurrentNetRate(m);
-        metrics.add(m);
+        calculateCurrentNetRate(currentmMetrics);
         metricsCount++;
 
         // TEST
-        // printStatus();
+        printStatus();
     }
 
 //        private void updatePreviousTime() {
 //            previousProfileTime = System.currentTimeMillis() / 1000;
 //        }
 
+    private boolean getCpuTime(DockerMetrics m) {
+        if(!isRunning) {
+            return false;
+        }
+        boolean calRate = true;
+        if(metricsCount == 0) {
+            calRate = false;
+        }
+
+        String dockerUrl = cpuPath + "cpuacct.usage";
+        String sysUrl = "/proc/stat";
+
+        // read the docker's cpu time
+        List<String> readLines = readFileLines(dockerUrl);
+        if(readLines != null) {
+            String dockerCpuTimeStr = readLines.get(0);
+            m.dockerCpuTime = Long.parseLong(dockerCpuTimeStr) / 1000000;
+        }
+        readLines = readFileLines(sysUrl);
+        if(readLines != null) {
+            String[] firstLineStr = readLines.get(0).split("\\s+");
+            Long sysCpuTime = 0L;
+            for(int i = 1; i < firstLineStr.length; i++) {
+                sysCpuTime += Long.parseLong(firstLineStr[i]);
+            }
+            m.sysCpuTime = sysCpuTime;
+        }
+        return calRate;
+    }
+
+    private void calculateCurrentCpuRate(DockerMetrics m) {
+        if(!getCpuTime((m))) {
+            return;
+        }
+
+        //calculate the rate
+        Double deltaSysTime = (m.sysCpuTime - previousMetrics.sysCpuTime) * 1.0;
+        Double deltaDockerTime = (m.dockerCpuTime - previousMetrics.dockerCpuTime) * 1.0;
+        m.cpuRate = deltaDockerTime / deltaSysTime;
+    }
+
     // calculate the disk I/O rate
     private void calculateCurrentDiskRate(DockerMetrics m) {
         if (!getDiskServicedBytes(m)) {
             return;
         }
-        DockerMetrics previousMetrics = metrics.get(metricsCount - 1);
         // init timestamps
         Double deltaTime = (m.timestamp - previousMetrics.timestamp) * 1.0;
 
-        // calculate rate
+        // calculate the rate
         Long deltaRead = m.diskReadBytes - previousMetrics.diskReadBytes;
         m.diskReadRate = deltaRead / deltaTime;
         Long deltaWrite = m.diskWriteBytes - previousMetrics.diskWriteBytes;
@@ -193,7 +244,6 @@ public class DockerMonitor {
         if(!getNetServicedBytes(m)) {
             return;
         }
-        DockerMetrics previousMetrics = metrics.get(metricsCount - 1);
         Double deltaTime = (m.timestamp - previousMetrics.timestamp) * 1.0;
 
         Long deltaReceive = m.netRecBytes - previousMetrics.netRecBytes;
@@ -277,7 +327,7 @@ public class DockerMonitor {
         if (metricsCount == 0) {
             return;
         }
-        DockerMetrics last = metrics.get(metricsCount - 1);
+        DockerMetrics last = currentmMetrics;
 
     }
 
@@ -286,8 +336,9 @@ public class DockerMonitor {
         if (metricsCount == 0) {
             return;
         }
-        DockerMetrics last = metrics.get(metricsCount - 1);
-        System.out.print("docker pid: " + dockerPid +
+        DockerMetrics last = currentmMetrics;
+        System.out.print("docker pid: " + dockerPid + "\n" +
+        "cpu rate: " + last.cpuRate + "\n" +
         " total read: " + last.diskReadBytes +
         " total write: " + last.diskWriteBytes +
         " read rate: " + last.diskReadRate +

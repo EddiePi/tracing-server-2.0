@@ -128,9 +128,9 @@ public class WatchDir {
 
             boolean valid = key.reset();
             if (!valid) {
-                // remove unaccessible directory
+                // remove inaccessible directory
                 keys.remove(key);
-                // stop when the observing directory is removed.
+                // stop the watcher when the observing directory is removed.
                 if (keys.isEmpty()) {
                     break;
                 }

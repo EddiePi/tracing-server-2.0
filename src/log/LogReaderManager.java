@@ -1,5 +1,6 @@
 package log;
 
+import Server.Tracer;
 import Server.TracerConf;
 import Utils.FileWatcher.FileActionCallback;
 import Utils.FileWatcher.WatchDir;
@@ -13,9 +14,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class LogReaderManager {
     TracerConf conf = TracerConf.getInstance();
+    Tracer tracer = Tracer.getInstance();
     File rootDir;
     File[] applicationDirs;
-    Boolean isChecking;
+    volatile Boolean isChecking;
+    // Key is the container's id.
     public ConcurrentMap<String, ContainerLogReader> runningContainerMap = new ConcurrentHashMap<>();
     Thread checkingThread;
 
@@ -28,6 +31,7 @@ public class LogReaderManager {
         isChecking = true;
 
         checkingThread = new Thread(new CheckAppDirRunnable());
+        checkingThread.start();
 
     }
 
@@ -41,12 +45,13 @@ public class LogReaderManager {
                     @Override
                     public void create(File file) {
                         System.out.println("file created\t" + file.getAbsolutePath());
+
+                        // The file name is also the containerId.
                         String name = file.getName();
                         if(name.contains("container")) {
                             runningContainerMap.put(name, new ContainerLogReader(file.getAbsolutePath()));
+                            tracer.addContainerMonitor(name);
                         }
-
-
                     }
 
                     @Override
@@ -61,22 +66,16 @@ public class LogReaderManager {
         }
     }
 
-
-
-
-
     public void start() {
         checkingThread.start();
     }
 
-
-    //TODO
-    public void stop() {
+    public void stopContainerLogReaderById(String containerId) {
+        ContainerLogReader logReaderToRemove =
+                runningContainerMap.remove(containerId);
+        if(logReaderToRemove != null) {
+            logReaderToRemove.stop();
+        }
 
     }
-
-    private void updateLogThreadPool(File appDir) {
-
-    }
-
 }

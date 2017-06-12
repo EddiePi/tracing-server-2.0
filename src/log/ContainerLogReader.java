@@ -17,7 +17,7 @@ public class ContainerLogReader {
     Map<String, Integer> readingFileCount = new HashMap<>();
     List<FileReadRunnable> fileReadRunnableList = new ArrayList<>();
     ExecutorService fileReadingThreadPool = Executors.newCachedThreadPool();
-    Boolean isChecking = true;
+    volatile Boolean isChecking = true;
     String containerId;
     Thread checkingThread;
 
@@ -123,7 +123,7 @@ public class ContainerLogReader {
      */
     public void stop() {
         isChecking = false;
-        checkingThread.interrupt();
+        //checkingThread.interrupt();
         try {
             for (FileReadRunnable runnable : fileReadRunnableList) {
                 runnable.destroy();

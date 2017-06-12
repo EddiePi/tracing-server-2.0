@@ -14,6 +14,5 @@ public class TracingMaster {
         //tracer.init();
         System.out.print("new tracing master\n");
         LogReaderManager logReader = new LogReaderManager();
-        logReader.start();
     }
 }

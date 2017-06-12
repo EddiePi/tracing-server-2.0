@@ -9,6 +9,12 @@ public class DockerMetrics {
     // docker taskMetrics
     // unit: second
     public Long timestamp;
+
+    // cpu usage
+    public Long sysCpuTime = 0L;
+    public Long dockerCpuTime = 0L;
+    public Double cpuRate = 0.0;
+
     // disk taskMetrics
     public Long diskReadBytes = 0L;
     public Long diskWriteBytes = 0L;

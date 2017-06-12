@@ -3,9 +3,9 @@ package Server;
 import CsvUtils.ContainerCsvWriter;
 import MetricsSender.KafkaMetricsSender;
 import MetricsSender.PickleMetricsSender;
-import RPCService.SparkMonitor;
-import docker.DockerMonitor;
+import docker.DockerMonitorManager;
 import info.*;
+import log.LogReaderManager;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -21,8 +21,10 @@ public class Tracer {
     private boolean needFetch = false;
     private boolean fetchEnabled = false;
 
-    public SparkMonitor sm;
-    public ConcurrentMap<String, DockerMonitor> containerIdToDM = new ConcurrentHashMap<>();
+    private LogReaderManager logReaderManager;
+
+    private DockerMonitorManager dockerMonitorManager;
+
     public ConcurrentMap<String, List<ContainerMetrics>> containerIdToMetrics = new ConcurrentHashMap<>();
     public List<String> containerToReport = new ArrayList<>();
     private int runningAppCount = 0;
@@ -71,110 +73,38 @@ public class Tracer {
 
     private Tracer() {
         fetchEnabled = conf.getBooleanOrDefault("tracer.fetch.enabled", false);
-        pms = new PickleMetricsSender();
         kms = new KafkaMetricsSender();
-        if (analyzerEnabled) {
-            analyzer = new Analyzer(analyzerEnabled);
-        }
+        logReaderManager = new LogReaderManager();
+        dockerMonitorManager = new DockerMonitorManager();
     }
 
     public static Tracer getInstance() {
         return instance;
     }
 
-    // start rpc server and analyzer
     public void init() {
-        sm = new SparkMonitor();
-        sm.startServer();
-        tThread.start();
-        if (analyzerEnabled) {
-            analyzer.start();
-        }
+        logReaderManager.start();
     }
 
-
-    // this method is always called after the 'getOrCreateTask' is called
-    public synchronized void updateTask(Task task) {
-        for (App a: applications.values()) {
-            if (!a.appId.equals(task.appId)) {
-                continue;
-            } else {
-                a.addOrUpdateTask(task);
-                break;
-            }
-        }
+    /**
+     * This method is called by <code>LogReaderManager</code>.
+     * Used to create a new <code>DockerMonitor</code>.
+     *
+     * @param containerId
+     */
+    public void addContainerMonitor(String containerId) {
+        dockerMonitorManager.addDockerMonitor(containerId);
     }
 
-    public Task getOrCreateTask(String appId, int jobId, int stageId,
-                                int stageAttemptId, long taskId, String containerId) {
-        // get task from map if it exist.
-        // otherwise create the task.
-        App a = getOrCreateApp(appId);
-        // quick return if the task exists.
-        if (a.getAllTasks().containsKey(taskId)) {
-            return a.getAllTasks().get(taskId);
-        }
-        Task task = a.getTaskById(jobId, stageId, taskId);
-        if (task == null) {
-            task = new Task(taskId, stageId, stageAttemptId, jobId, appId, containerId);
-            // we don't want to create the first metrics here?
-//            TaskMetrics newTaskMetrics = new TaskMetrics();
-//            newTaskMetrics.status = "INIT";
-//            task.taskMetrics.add(newTaskMetrics);
-            a.addOrUpdateTask(task);
-        }
-        return task;
+    /**
+     * This method is called by <code>DockerMonitor</code>.
+     * Used to stop a <code>LogReaderManager</code>
+     *
+     * @param containerId
+     */
+    public void removeContainerLogReader(String containerId) {
+        logReaderManager.stopContainerLogReaderById(containerId);
     }
-
-    private void updateTaskDockerInfo(Map<Long, Task> taskMap) {
-        Map<String, Integer> containerIdToTaskNumber = new HashMap<>();
-        for(Task task: taskMap.values()) {
-            if (task.containerId == null) {
-                continue;
-            }
-            Integer taskNum = containerIdToTaskNumber.get(task.containerId);
-            if (taskNum == null) {
-                containerIdToTaskNumber.put(task.containerId, 1);
-            } else {
-                containerIdToTaskNumber.put(task.containerId, taskNum + 1);
-            }
-        }
-        if (containerIdToTaskNumber.size() == 0) {
-            return;
-        }
-        for(DockerMonitor dockerMonitor: containerIdToDM.values()) {
-            dockerMonitor.updateCgroupValues();
-        }
-        for(Task task: taskMap.values()) {
-            if (task.containerId == null) {
-                continue;
-            }
-            DockerMonitor dm = containerIdToDM.get(task.containerId);
-            if (dm == null) {
-                continue;
-            }
-            task.setMetricsFromDocker(dm.getLatestDockerMetrics(),
-                    containerIdToTaskNumber.get(task.containerId));
-        }
-    }
-
-//    public Stage getOrCreateStage(Job job, int stageId) {
-//        Stage stage = job.getStageById(stageId);
-//        if (stage == null) {
-//            stage = new Stage(stageId, job.jobId, job.appId);
-//            job.updateStage(stage);
-//        }
-//        return stage;
-//    }
-//
-//    public Job getOrCreateJob(App app, int jobId) {
-//        Job job = app.getJobById(jobId);
-//        if (job == null) {
-//            job = new Job(jobId, app.appId);
-//            app.updateJob(job);
-//        }
-//        return job;
-//    }
 
     public App getOrCreateApp(String appId) {
         App app;
@@ -199,7 +129,6 @@ public class Tracer {
             Double diskWriteRate = 0D;
             Double netRecRate = 0D;
             Double netTransRate = 0D;
-            updateTaskDockerInfo(app.getReporingTasks());
             Map<Long, Task> taskMap = app.getAndClearReportingTasks();
             for(Task task: taskMap.values()) {
                 System.out.print("task metrics size: " + task.taskMetrics.size() + "\n");
@@ -256,11 +185,11 @@ public class Tracer {
         }
     }
 
-    // this method send data to both database and analyzer (if enabled).
+    // we don't need this method.
+    // metrics and log info are sent by the collector class respectively.
     public void sendInfo() {
         for(App app: applications.values()) {
             Map<Long, Task> taskMap = app.getAndClearReportingTasks();
-            updateTaskDockerInfo(taskMap);
             buildContainerMetrics(taskMap);
 //            for(Task task: taskMap.values()) {
 //                if (pms == null) {
@@ -293,6 +222,7 @@ public class Tracer {
         }
     }
 
+    // TODO rewrite this method
     private void buildContainerMetrics(Map<Long, Task> taskMap) {
         Map<String, ContainerMetrics> currentCmMap = new HashMap<>();
         for(Task task: taskMap.values()) {
@@ -312,7 +242,6 @@ public class Tracer {
         }
 
         // update container metrics in stage at runtime
-        //TODO test the following part
         for (Map.Entry<String, ContainerMetrics> entry: currentCmMap.entrySet()) {
             ContainerMetrics containerMetrics = entry.getValue();
             String containerId = entry.getKey();
@@ -326,13 +255,6 @@ public class Tracer {
             }
             stageCM.add(containerMetrics);
             stageToUpdate.containerMetricsMap.put(containerId, stageCM);
-        }
-    }
-
-    // TEST
-    public void printDockerInfo() {
-        for(DockerMonitor dm: containerIdToDM.values()) {
-            dm.printStatus();
         }
     }
 
@@ -368,7 +290,6 @@ public class Tracer {
                 }
             }
         }
-        containerIdToDM.clear();
         containerToReport.clear();
         containerIdToMetrics.clear();
         applications.clear();
