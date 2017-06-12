@@ -13,8 +13,7 @@ import java.util.concurrent.ConcurrentMap;
  * Created by Eddie on 2017/6/6.
  */
 public class LogReaderManager {
-    TracerConf conf = TracerConf.getInstance();
-    Tracer tracer = Tracer.getInstance();
+    TracerConf conf;
     File rootDir;
     File[] applicationDirs;
     volatile Boolean isChecking;
@@ -23,6 +22,8 @@ public class LogReaderManager {
     Thread checkingThread;
 
     public LogReaderManager() {
+        conf = TracerConf.getInstance();
+        //tracer = Tracer.getInstance();
         rootDir = new File(conf.getStringOrDefault("tracer.log.root", "~/hadoop-2.7.3/logs/userlogs"));
         applicationDirs = rootDir.listFiles();
         if (applicationDirs == null) {
@@ -31,11 +32,11 @@ public class LogReaderManager {
         isChecking = true;
 
         checkingThread = new Thread(new CheckAppDirRunnable());
-        checkingThread.start();
 
     }
 
     private class CheckAppDirRunnable implements Runnable {
+        Tracer tracer = Tracer.getInstance();
 
         @Override
         public void run() {

@@ -18,5 +18,3 @@ tracer.simple.parameter.lowerThreshold  0.1
 tracer.kafka.topic  trace
 tracer.kafka.bootstrap.servers   localhost:9092
 
-tracer.log.root-dir             ~/hadoop2.7.3/logs/userlogs
-tracer.log.timeout              5

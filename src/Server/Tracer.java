@@ -74,8 +74,6 @@ public class Tracer {
     private Tracer() {
         fetchEnabled = conf.getBooleanOrDefault("tracer.fetch.enabled", false);
         kms = new KafkaMetricsSender();
-        logReaderManager = new LogReaderManager();
-        dockerMonitorManager = new DockerMonitorManager();
     }
 
     public static Tracer getInstance() {
@@ -83,6 +81,8 @@ public class Tracer {
     }
 
     public void init() {
+        logReaderManager = new LogReaderManager();
+        dockerMonitorManager = new DockerMonitorManager();
         logReaderManager.start();
     }
 
