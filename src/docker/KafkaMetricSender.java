@@ -1,13 +1,14 @@
 package docker;
 
-import MetricsSender.MetricsSender;
 import Server.TracerConf;
-import info.ContainerMetrics;
+import info.TimeStamps;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
+import java.sql.Timestamp;
 import java.util.Properties;
+import java.text.SimpleDateFormat;
 
 /**
  * Created by Eddie on 2017/6/13.
@@ -38,7 +39,7 @@ public class KafkaMetricSender {
     private String buildMetricString(DockerMetrics dm) {
         String res;
         res = dm.containerId + "," +
-                dm.timestamp.toString() + "," +
+                parseTimeStr(dm.timestamp) + "," +
                 dm.cpuRate.toString() + "," +
                 dm.memoryUsage.toString() + "," +
                 dm.diskReadRate.toString() + "," +
@@ -46,6 +47,13 @@ public class KafkaMetricSender {
                 dm.netRecRate.toString() + "," +
                 dm.netRecRate.toString();
         return res;
+    }
+
+    private String parseTimeStr(Long timestamp) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Timestamp ts = new Timestamp(timestamp);
+        String dateStr = sdf.format(ts);
+        return dateStr;
     }
 
     public void close() {
