@@ -60,7 +60,7 @@ public class ContainerLogReader {
 
         String filePath;
         //List<String> messageBuffer = new ArrayList<>();
-        String messageBuffer;
+        List<String> messageBuffer = new ArrayList<>();
         BufferedReader bufferedReader = null;
         Boolean isReading = true;
         KafkaLogSender logSender = new KafkaLogSender(containerId);
@@ -79,15 +79,14 @@ public class ContainerLogReader {
                 }
                 while (isReading) {
                     String line;
-                    messageBuffer = "";
+                    messageBuffer.clear();
                     while((line = bufferedReader.readLine()) != null) {
-                        messageBuffer += (line + "\n");
+                        messageBuffer.add(line);
                     }
-                    if (messageBuffer.length() != 0) {
-                        // TODO send the message to kafka
+                    for(String message: messageBuffer) {
                         // TEST
-                        // System.out.print("sending message: " + messageBuffer + "\n");
-                        logSender.send(messageBuffer);
+                        // System.out.printf("%s\n", message);
+                        logSender.send(message);
                     }
                     Thread.sleep(1000);
                 }

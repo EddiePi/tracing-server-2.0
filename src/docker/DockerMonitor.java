@@ -16,6 +16,7 @@ import java.util.List;
 class DockerMonitor {
     TracerConf conf = TracerConf.getInstance();
     private String dockerId;
+    private DockerMonitorManager manager;
     String containerId;
 
     // NOTE: type of dockerPid is String, NOT int
@@ -32,17 +33,21 @@ class DockerMonitor {
 
     volatile private boolean isRunning;
 
-    public DockerMonitor(String containerId) {
+    public DockerMonitor(String containerId, DockerMonitorManager dmManger) {
         this.containerId = containerId;
+        this.manager = dmManger;
         for(int i = 0; i < 5; i++) {
             this.dockerId = runShellCommand("docker inspect --format={{.Id}} " + containerId);
-            if(this.dockerId.contains("Error")) {
+            if(this.dockerId.contains("Error") || this.dockerId.length() == 0) {
                 System.out.print("docker for " + containerId + " is not started yet. retry in 1 sec.\n");
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+            } else {
+                System.out.print(String.format("docker id: %s\n", dockerId));
+                break;
             }
         }
         if(this.dockerId.contains("Error")) {
@@ -153,7 +158,7 @@ class DockerMonitor {
         calculateCurrentNetRate(currentMetrics);
 
         // TEST
-        printStatus();
+        // printStatus();
     }
 
 //        private void updatePreviousTime() {
@@ -311,10 +316,8 @@ class DockerMonitor {
         try {
             reader = new BufferedReader(new FileReader(file));
             String tempString = null;
-            int line = 1;
             while ((tempString = reader.readLine()) != null) {
                 results.add(tempString);
-                line++;
             }
             reader.close();
         } catch (IOException e) {
@@ -338,6 +341,7 @@ class DockerMonitor {
         if(!isError){
             return results;
         }else{
+            manager.removeDockerMonitor(containerId);
             return null;
         }
     }

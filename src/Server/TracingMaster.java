@@ -1,6 +1,5 @@
 package Server;
 
-import log.LogReaderManager;
 import org.apache.log4j.BasicConfigurator;
 
 
@@ -12,7 +11,5 @@ public class TracingMaster {
         BasicConfigurator.configure();
         Tracer tracer = Tracer.getInstance();
         tracer.init();
-        //System.out.print("new tracing master\n");
-        //LogReaderManager logReader = new LogReaderManager();
     }
 }

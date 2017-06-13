@@ -39,16 +39,9 @@ public class Tracer {
         public void run() {
             while (true) {
                 try {
-                    updateRunningApp();
-                    if (runningAppCount > 0) {
-                        if (isTest) {
-                            printTaskInfo();
-                            printHighLevelInfo();
-                        } else {
-                            sendInfo();
-                        }
-                    }
-                    Thread.sleep(reportInterval);
+                    System.out.printf("number of LogReader: %d; number of DockerMonitor: %d\n",
+                            logReaderManager.runningContainerMap.size(), dockerMonitorManager.containerIdToDM.size());
+                    Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (NullPointerException e) {
@@ -84,6 +77,7 @@ public class Tracer {
         logReaderManager = new LogReaderManager();
         dockerMonitorManager = new DockerMonitorManager();
         logReaderManager.start();
+        tThread.start();
     }
 
     /**
@@ -97,7 +91,7 @@ public class Tracer {
     }
 
     /**
-     * This method is called by <code>DockerMonitor</code>.
+     * This method is called by <code>DockerMonitorManager</code>.
      * Used to stop a <code>LogReaderManager</code>
      *
      * @param containerId
