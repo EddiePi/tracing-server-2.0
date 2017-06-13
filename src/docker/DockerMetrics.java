@@ -15,6 +15,10 @@ public class DockerMetrics {
     public Long dockerCpuTime = 0L;
     public Double cpuRate = 0.0;
 
+    // memory usage
+    public Long memoryLimit = 0L;
+    public Long memoryUsage = 0L;
+
     // disk taskMetrics
     public Long diskReadBytes = 0L;
     public Long diskWriteBytes = 0L;

@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -28,9 +27,8 @@ class DockerMonitor {
     private Thread monitorThread;
 
     private String ifaceName;
-    private DockerMetrics previousMetrics;
-    private DockerMetrics currentmMetrics;
-    int metricsCount = 0;
+    private DockerMetrics previousMetrics = null;
+    private DockerMetrics currentMetrics = null;
 
     volatile private boolean isRunning;
 
@@ -53,9 +51,11 @@ class DockerMonitor {
         }
 
         this.dockerPid = runShellCommand("docker inspect --format={{.State.Pid}} " + containerId).trim();
+        this.cpuPath = "/sys/fs/cgroup/cpu,cpuacct/docker/" + dockerId + "/";
+        this.memoryPath = "/sys/fs/cgroup/memory/docker/" + dockerId + "/";
         this.blkioPath= "/sys/fs/cgroup/blkio/docker/" + dockerId + "/";
         this.netFilePath = "/proc/" + dockerPid + "/net/dev";
-        this.cpuPath = "/sys/fs/cgroup/cpu,cpuacct/docker/" + dockerId + "/";
+
         ifaceName  = conf.getStringOrDefault("tracer.docker.iface-name", "eth0");
         monitorThread = new Thread(new MonitorRunnable());
     }
@@ -137,18 +137,20 @@ class DockerMonitor {
     }
 
     public void updateCgroupValues() {
-        previousMetrics = currentmMetrics;
-        currentmMetrics = new DockerMetrics(dockerId, containerId);
+        previousMetrics = currentMetrics;
+        currentMetrics = new DockerMetrics(dockerId, containerId);
 
         // calculate the cpu rate
-        calculateCurrentCpuRate(currentmMetrics);
+        calculateCurrentCpuRate(currentMetrics);
+
+        // get memory usage
+        getMemoryUsage(currentMetrics);
 
         // calculate the disk rate
-        calculateCurrentDiskRate(currentmMetrics);
+        calculateCurrentDiskRate(currentMetrics);
 
         // calculate the network rate
-        calculateCurrentNetRate(currentmMetrics);
-        metricsCount++;
+        calculateCurrentNetRate(currentMetrics);
 
         // TEST
         printStatus();
@@ -163,7 +165,7 @@ class DockerMonitor {
             return false;
         }
         boolean calRate = true;
-        if(metricsCount == 0) {
+        if(previousMetrics == null) {
             calRate = false;
         }
 
@@ -196,7 +198,23 @@ class DockerMonitor {
         //calculate the rate
         Double deltaSysTime = (m.sysCpuTime - previousMetrics.sysCpuTime) * 1.0;
         Double deltaDockerTime = (m.dockerCpuTime - previousMetrics.dockerCpuTime) * 1.0;
-        m.cpuRate = deltaDockerTime / deltaSysTime;
+        m.cpuRate = Math.max(0.0D, deltaDockerTime / deltaSysTime);
+    }
+
+    private void getMemoryUsage(DockerMetrics m) {
+        if(!isRunning) {
+            return;
+        }
+        // get the memory limit
+        String sysMaxMemoryStr = readFileLines("/proc/meminfo").get(0).split("\\s+")[1];
+        Long sysMaxMemory = Long.parseLong(sysMaxMemoryStr);
+        String dockerMaxMemoryStr = readFileLines(memoryPath + "memory.limit_in_bytes").get(0);
+        Long dockerMaxMemory = Long.parseLong(dockerMaxMemoryStr) / 1000;
+        m.memoryLimit = Math.min(sysMaxMemory, dockerMaxMemory);
+
+        String memoryUsageStr = readFileLines(memoryPath + "memory.usage_in_bytes").get(0);
+        Long memoryUsage = Long.parseLong(memoryUsageStr);
+        m.memoryUsage = memoryUsage;
     }
 
     // calculate the disk I/O rate
@@ -223,7 +241,7 @@ class DockerMonitor {
             return false;
         }
         boolean calRate = true;
-        if (metricsCount == 0) {
+        if (previousMetrics == null) {
             calRate = false;
         }
 
@@ -261,7 +279,7 @@ class DockerMonitor {
             return false;
         }
         boolean calRate = true;
-        if (metricsCount == 0) {
+        if (previousMetrics == null) {
             calRate = false;
         }
         String[] results = runShellCommand("cat " + netFilePath).split("\n");
@@ -325,28 +343,28 @@ class DockerMonitor {
     }
 
     private void sendInfoToDatabase() {
-        if (metricsCount == 0) {
+        if (currentMetrics == null) {
             return;
         }
-        DockerMetrics last = currentmMetrics;
-
+        DockerMetrics last = currentMetrics;
     }
 
     // TEST
     public void printStatus() {
-        if (metricsCount == 0) {
+        if (currentMetrics == null) {
             return;
         }
-        DockerMetrics last = currentmMetrics;
-        System.out.print("docker pid: " + dockerPid + "\n" +
-        "cpu rate: " + last.cpuRate + "\n" +
-        " total read: " + last.diskReadBytes +
-        " total write: " + last.diskWriteBytes +
-        " read rate: " + last.diskReadRate +
-        " write rate: " + last.diskWriteRate + "\n" +
-        "total receive: " + last.netRecBytes +
-        " total transmit: " + last.netTransBytes +
-        " receive rate: " + last.netRecRate +
-        " transmit rate: " + last.netTransRate + "\n");
+        System.out.printf("docker pid: %s\n" +
+                "cpu rate: %s\n" +
+                "memory usage in kb: %d\n" +
+                "total read: %d total write: %d read rate: %s write rate: %s\n" +
+                "total receive: %d total transmit: %d receive rate: %s transmit rate: %s\n",
+                dockerPid,
+                currentMetrics.cpuRate,
+                currentMetrics.memoryUsage,
+                currentMetrics.diskReadBytes, currentMetrics.diskWriteBytes,
+                currentMetrics.diskReadRate, currentMetrics.diskWriteRate,
+                currentMetrics.netRecBytes, currentMetrics.netTransBytes,
+                currentMetrics.netRecRate, currentMetrics.netTransRate);
     }
 }
