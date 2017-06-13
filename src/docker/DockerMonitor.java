@@ -31,6 +31,8 @@ class DockerMonitor {
     private DockerMetrics previousMetrics = null;
     private DockerMetrics currentMetrics = null;
 
+    private KafkaMetricSender metricSender = new KafkaMetricSender();
+
     volatile private boolean isRunning;
 
     public DockerMonitor(String containerId, DockerMonitorManager dmManger) {
@@ -156,6 +158,8 @@ class DockerMonitor {
 
         // calculate the network rate
         calculateCurrentNetRate(currentMetrics);
+
+        metricSender.send(currentMetrics);
 
         // TEST
         // printStatus();
@@ -341,6 +345,7 @@ class DockerMonitor {
         if(!isError){
             return results;
         }else{
+            metricSender.close();
             manager.removeDockerMonitor(containerId);
             return null;
         }
