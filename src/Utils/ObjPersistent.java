@@ -1,16 +1,10 @@
 package Utils;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
+import java.io.*;
 /**
  * Created by Eddie on 2017/4/18.
  */
-public class ObjPersistant {
+public class ObjPersistent {
     public static void saveObject(Object o, String path) {
         try {
             ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(path));

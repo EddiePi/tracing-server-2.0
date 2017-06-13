@@ -1,14 +1,13 @@
 package docker;
 
 import Server.TracerConf;
-import info.TimeStamps;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.sql.Timestamp;
-import java.util.Properties;
 import java.text.SimpleDateFormat;
+import java.util.Properties;
 
 /**
  * Created by Eddie on 2017/6/13.
@@ -50,7 +49,7 @@ public class KafkaMetricSender {
     }
 
     private String parseTimeStr(Long timestamp) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Timestamp ts = new Timestamp(timestamp);
         String dateStr = sdf.format(ts);
         return dateStr;

@@ -1,13 +1,13 @@
 package JsonUtils;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-
-import Utils.*;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
 
 /**
  * Created by Eddie on 2017/4/14.

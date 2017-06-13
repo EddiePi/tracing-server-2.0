@@ -3,7 +3,7 @@ package Server;
 import JsonUtils.AppConstructor;
 import ML.GMMAlgorithm;
 import ML.GMMParameter;
-import Utils.ObjPersistant;
+import Utils.ObjPersistent;
 import info.*;
 
 import java.util.ArrayList;
@@ -75,16 +75,16 @@ public class Analyzer {
             analysisThread = new Thread(new simpleAnalysisRunnable());
             upperThreshold = conf.getDoubleOrDefault("tracer.simple.parameter.upperThreshold", 0.8);
             lowerThreshold = conf.getDoubleOrDefault("tracer.simple.parameter.upperThreshold", 0.1);
-            simpleParameter = (SimpleParameter) ObjPersistant.readObject(simpleParameterPath);
+            simpleParameter = (SimpleParameter) ObjPersistent.readObject(simpleParameterPath);
             if (simpleParameter == null) {
                 simpleParameter = new SimpleParameter();
-                ObjPersistant.saveObject(simpleParameter, simpleParameterPath);
+                ObjPersistent.saveObject(simpleParameter, simpleParameterPath);
             }
 
         } else {
             analysisThread = new Thread(new classifierRunnable());
             if(readParameter) {
-                GMMparameter = (GMMParameter) ObjPersistant.readObject(GMMParameterPath);
+                GMMparameter = (GMMParameter) ObjPersistent.readObject(GMMParameterPath);
             }
         }
     }
@@ -136,7 +136,7 @@ public class Analyzer {
                     }
                 }
             }
-            ObjPersistant.saveObject(simpleParameter, simpleParameterPath);
+            ObjPersistent.saveObject(simpleParameter, simpleParameterPath);
         }
         metricsInAnalysis.clear();
     }

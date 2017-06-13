@@ -1,7 +1,5 @@
 package CsvUtils;
 
-import JsonUtils.JsonWriter;
-import JsonUtils.MetricNames;
 import Server.TracerConf;
 import info.App;
 import info.ContainerMetrics;
