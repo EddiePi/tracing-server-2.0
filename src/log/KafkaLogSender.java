@@ -26,7 +26,7 @@ public class KafkaLogSender {
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         String servers = conf.getStringOrDefault("tracer.kafka.bootstrap.servers", "localhost:9092");
         props.put("bootstrap.servers", servers);
-        kafkaTopic = conf.getStringOrDefault("tracer.kafka.topic", "log");
+        kafkaTopic = "log";
         producer = new KafkaProducer<>(props);
 
         this.containerId = containerId;

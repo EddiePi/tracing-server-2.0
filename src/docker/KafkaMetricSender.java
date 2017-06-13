@@ -27,7 +27,7 @@ public class KafkaMetricSender {
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         String servers = conf.getStringOrDefault("tracer.kafka.bootstrap.servers", "localhost:9092");
         props.put("bootstrap.servers", servers);
-        kafkaTopic = conf.getStringOrDefault("tracer.kafka.topic", "trace");
+        kafkaTopic = "trace";
         producer = new KafkaProducer<>(props);
     }
 
