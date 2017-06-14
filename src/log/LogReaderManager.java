@@ -137,10 +137,6 @@ public class LogReaderManager {
                 e.printStackTrace();
             }
         }
-
-        public void destroy() throws IOException {
-            watchDir.stop();
-        }
     }
 
     public void start() {
@@ -158,7 +154,6 @@ public class LogReaderManager {
 
     public void stop() throws IOException {
         nodeManagerReaderRunnable.destroy();
-        checkingRunnable.destroy();
         for(ContainerLogReader logReader: runningContainerMap.values()) {
             logReader.stop();
         }
