@@ -9,7 +9,7 @@ public class ShutdownHookThread extends Thread {
 
     @Override
     public void run() {
-        System.out.print("adding shutdown hook\n");
+        System.out.print("tracer is shutting down.\n");
         Tracer tracer = Tracer.getInstance();
         try{
             tracer.stop();

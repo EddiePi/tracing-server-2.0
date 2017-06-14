@@ -12,6 +12,7 @@ public class TracingMaster {
         Tracer tracer = Tracer.getInstance();
         tracer.init();
 
+        System.out.print("add shutdown hook.\n");
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread());
     }
 }
