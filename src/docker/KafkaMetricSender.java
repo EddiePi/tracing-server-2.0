@@ -8,6 +8,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Eddie on 2017/6/13.

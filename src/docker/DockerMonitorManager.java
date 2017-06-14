@@ -29,11 +29,8 @@ public class DockerMonitorManager {
      * @param containerId
      */
     public void removeDockerMonitor(String containerId) {
-        DockerMonitor dockerMonitorToRemove =
-                containerIdToDM.remove(containerId);
-        if(dockerMonitorToRemove != null) {
-            dockerMonitorToRemove.stop();
-        }
+        containerIdToDM.remove(containerId);
+
         // Notify the tracer to remove LogReader of this container.
         tracer.removeContainerLogReader(containerId);
     }

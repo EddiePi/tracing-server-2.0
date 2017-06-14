@@ -25,6 +25,7 @@ class DockerMonitor {
     private String netFilePath;
     private String cpuPath;
     private String memoryPath;
+    private MonitorRunnable monitorRunnable;
     private Thread monitorThread;
 
     private String ifaceName;
@@ -62,9 +63,10 @@ class DockerMonitor {
         this.memoryPath = "/sys/fs/cgroup/memory/docker/" + dockerId + "/";
         this.blkioPath= "/sys/fs/cgroup/blkio/docker/" + dockerId + "/";
         this.netFilePath = "/proc/" + dockerPid + "/net/dev";
-
         ifaceName  = conf.getStringOrDefault("tracer.docker.iface-name", "eth0");
-        monitorThread = new Thread(new MonitorRunnable());
+
+        monitorRunnable = new MonitorRunnable();
+        monitorThread = new Thread(monitorRunnable);
     }
 
     public void start() {
@@ -75,12 +77,7 @@ class DockerMonitor {
     }
 
     public void stop() {
-        try {
-            isRunning = false;
-            // monitorThread.interrupt();
-        }
-        catch (Exception e) {
-        }
+        monitorRunnable.stop();
     }
 
     public String getDockerId() {
@@ -141,6 +138,10 @@ class DockerMonitor {
                 }
             }
         }
+
+        public void stop() {
+            isRunning = false;
+        }
     }
 
     public void updateCgroupValues() {
@@ -160,14 +161,13 @@ class DockerMonitor {
         calculateCurrentNetRate(currentMetrics);
 
         metricSender.send(currentMetrics);
+        if(!isRunning) {
+            metricSender.close();
+        }
 
         // TEST
         // printStatus();
     }
-
-//        private void updatePreviousTime() {
-//            previousProfileTime = System.currentTimeMillis() / 1000;
-//        }
 
     private boolean getCpuTime(DockerMetrics m) {
         if(!isRunning) {
@@ -267,6 +267,7 @@ class DockerMonitor {
         }
         return calRate;
     }
+
     // calculate the network I/O rate
     private void calculateCurrentNetRate(DockerMetrics m) {
         if(!getNetServicedBytes(m)) {
@@ -330,9 +331,8 @@ class DockerMonitor {
             //has terminated, but nodemanager did not delete it yet. we stop monitoring
             //here
             if(e.toString().contains("FileNotFoundException")){
-                isRunning=false;
+                isError = true;
             }
-            isError=true;
         } finally {
             if (reader != null) {
                 try {
@@ -345,7 +345,7 @@ class DockerMonitor {
         if(!isError){
             return results;
         }else{
-            metricSender.close();
+            stop();
             manager.removeDockerMonitor(containerId);
             return null;
         }
