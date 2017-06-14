@@ -20,8 +20,7 @@ public class WatchDir {
     /**
      * constructor
      *
-     * @param file
-     *            directory，cannot be files
+     * @param file   directory，cannot be files
      * @param subDir
      * @throws Exception
      */
@@ -77,7 +76,7 @@ public class WatchDir {
      */
     @SuppressWarnings("rawtypes")
     void processEvents(FileActionCallback callback) {
-        for (;;) {
+        for (; ; ) {
             WatchKey key;
             try {
                 key = watcher.take();
@@ -136,5 +135,9 @@ public class WatchDir {
                 }
             }
         }
+    }
+
+    public void stop() throws IOException {
+        watcher.close();
     }
 }

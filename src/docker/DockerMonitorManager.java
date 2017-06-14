@@ -37,4 +37,10 @@ public class DockerMonitorManager {
         // Notify the tracer to remove LogReader of this container.
         tracer.removeContainerLogReader(containerId);
     }
+
+    public void stop() {
+        for(DockerMonitor dockerMonitor: containerIdToDM.values()) {
+            dockerMonitor.stop();
+        }
+    }
 }

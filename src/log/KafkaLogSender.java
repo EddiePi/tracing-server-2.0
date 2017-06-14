@@ -15,9 +15,11 @@ public class KafkaLogSender {
     Producer<String, String> producer;
     TracerConf conf;
     String kafkaTopic;
-    String containerId;
 
-    public KafkaLogSender(String containerId) {
+    // The identifier is either containerId or 'nodemanager'.
+    String identifier;
+
+    public KafkaLogSender(String identifier) {
         conf = TracerConf.getInstance();
         props = new Properties();
         props.put("acks", "0");
@@ -29,12 +31,12 @@ public class KafkaLogSender {
         kafkaTopic = "log";
         producer = new KafkaProducer<>(props);
 
-        this.containerId = containerId;
+        this.identifier = identifier;
 
     }
 
     public void send(String message) {
-        producer.send(new ProducerRecord<String, String>(kafkaTopic, containerId, message));
+        producer.send(new ProducerRecord<String, String>(kafkaTopic, identifier, message));
     }
 
     public void close() {

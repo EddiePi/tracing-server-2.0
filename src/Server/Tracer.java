@@ -3,6 +3,8 @@ package Server;
 import docker.DockerMonitorManager;
 import log.LogReaderManager;
 
+import java.io.IOException;
+
 /**
  * Created by Eddie on 2017/2/21.
  */
@@ -64,5 +66,10 @@ public class Tracer {
      */
     public void removeContainerLogReader(String containerId) {
         logReaderManager.stopContainerLogReaderById(containerId);
+    }
+
+    public void stop() throws IOException {
+        logReaderManager.stop();
+        dockerMonitorManager.stop();
     }
 }

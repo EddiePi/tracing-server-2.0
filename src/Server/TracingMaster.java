@@ -11,5 +11,7 @@ public class TracingMaster {
         BasicConfigurator.configure();
         Tracer tracer = Tracer.getInstance();
         tracer.init();
+
+        Runtime.getRuntime().addShutdownHook(new ShutdownHookThread());
     }
 }
