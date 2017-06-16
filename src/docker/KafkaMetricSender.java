@@ -48,7 +48,7 @@ public class KafkaMetricSender {
                 dm.diskReadRate.toString() + "," +
                 dm.diskWriteRate.toString() + "," +
                 dm.netRecRate.toString() + "," +
-                dm.netRecRate.toString();
+                dm.netTransRate.toString();
         return res;
     }
 
