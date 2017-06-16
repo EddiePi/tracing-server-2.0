@@ -32,7 +32,7 @@ public class DockerMetrics {
     public Double netTransRate = 0.0;
 
     public DockerMetrics(String dockerId, String containerId) {
-        timestamp = System.currentTimeMillis() / 1000;
+        timestamp = System.currentTimeMillis();
         this.dockerId = dockerId;
         this.containerId = containerId;
     }
