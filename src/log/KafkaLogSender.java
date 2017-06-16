@@ -16,10 +16,10 @@ public class KafkaLogSender {
     TracerConf conf;
     String kafkaTopic;
 
-    // The identifier is either containerId or 'nodemanager'.
-    String identifier;
+    // The key is either containerId-log or 'nodemanager-log'.
+    String key;
 
-    public KafkaLogSender(String identifier) {
+    public KafkaLogSender(String key) {
         conf = TracerConf.getInstance();
         props = new Properties();
         props.put("acks", "0");
@@ -31,12 +31,12 @@ public class KafkaLogSender {
         kafkaTopic = "log";
         producer = new KafkaProducer<>(props);
 
-        this.identifier = identifier;
+        this.key = key + "-log";
 
     }
 
     public void send(String message) {
-        producer.send(new ProducerRecord<String, String>(kafkaTopic, identifier, message));
+        producer.send(new ProducerRecord<String, String>(kafkaTopic, key, message));
     }
 
     public void close() {

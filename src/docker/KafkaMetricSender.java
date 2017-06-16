@@ -33,7 +33,10 @@ public class KafkaMetricSender {
     }
 
     public void send(DockerMetrics dm) {
-        producer.send(new ProducerRecord<String, String>(kafkaTopic, dm.containerId, buildMetricString(dm)));
+        producer.send(new ProducerRecord<String, String>(
+                kafkaTopic,
+                dm.containerId + "-metric",
+                buildMetricString(dm)));
     }
 
     private String buildMetricString(DockerMetrics dm) {
