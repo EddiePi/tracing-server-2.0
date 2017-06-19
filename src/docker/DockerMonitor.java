@@ -226,7 +226,7 @@ class DockerMonitor {
         m.memoryUsage = memoryUsage;
     }
 
-    // calculate the disk I/O rate
+    // calculate the disk I/O rate(kb/s)
     private void calculateCurrentDiskRate(DockerMetrics m) {
         if (!getDiskServicedBytes(m)) {
             return;
@@ -236,9 +236,9 @@ class DockerMonitor {
 
         // calculate the rate
         Long deltaRead = m.diskReadBytes - previousMetrics.diskReadBytes;
-        m.diskReadRate = deltaRead / deltaTime;
+        m.diskReadRate = deltaRead / deltaTime/ 1000d;
         Long deltaWrite = m.diskWriteBytes - previousMetrics.diskWriteBytes;
-        m.diskWriteRate = deltaWrite / deltaTime;
+        m.diskWriteRate = deltaWrite / deltaTime / 1000d;
         //System.out.print("deltaTime: " + deltaTime + " deltaRead: " + deltaRead + " deltaWrite: " + deltaWrite + "\n");
     }
 
@@ -268,7 +268,7 @@ class DockerMonitor {
         return calRate;
     }
 
-    // calculate the network I/O rate
+    // calculate the network I/O rate(kb/s)
     private void calculateCurrentNetRate(DockerMetrics m) {
         if(!getNetServicedBytes(m)) {
             return;
@@ -276,9 +276,9 @@ class DockerMonitor {
         Double deltaTime = (m.timestamp - previousMetrics.timestamp) / 1000.0;
 
         Long deltaReceive = m.netRecBytes - previousMetrics.netRecBytes;
-        m.netRecRate = deltaReceive / deltaTime;
+        m.netRecRate = deltaReceive / deltaTime / 1000d;
         Long deltaTransmit = m.netTransBytes - previousMetrics.netTransBytes;
-        m.netTransRate = deltaTransmit / deltaTime;
+        m.netTransRate = deltaTransmit / deltaTime / 1000d;
         //System.out.print("deltaTime: " + deltaTime + " deltaRec: " + deltaReceive + " deltaTrans: " + deltaTransmit + "\n");
     }
 
