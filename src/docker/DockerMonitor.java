@@ -232,7 +232,7 @@ class DockerMonitor {
             return;
         }
         // init timestamps
-        Double deltaTime = (m.timestamp - previousMetrics.timestamp) * 1.0;
+        Double deltaTime = (m.timestamp - previousMetrics.timestamp) / 1000.0;
 
         // calculate the rate
         Long deltaRead = m.diskReadBytes - previousMetrics.diskReadBytes;
@@ -273,7 +273,7 @@ class DockerMonitor {
         if(!getNetServicedBytes(m)) {
             return;
         }
-        Double deltaTime = (m.timestamp - previousMetrics.timestamp) * 1.0;
+        Double deltaTime = (m.timestamp - previousMetrics.timestamp) / 1000.0;
 
         Long deltaReceive = m.netRecBytes - previousMetrics.netRecBytes;
         m.netRecRate = deltaReceive / deltaTime;
