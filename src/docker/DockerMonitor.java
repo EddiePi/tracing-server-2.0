@@ -256,12 +256,12 @@ class DockerMonitor {
 
         String url = blkioPath + "blkio.throttle.io_service_bytes";
         List<String> readLines = readFileLines(url);
-        if (readLines != null) {
-            String readStr = readLines.get(0).split(" ")[2];
+        if (readLines != null || readLines.size() > 0) {
+            String readStr = readLines.get(0).split("\\s+")[2];
             m.diskReadBytes = Long.parseLong(readStr);
 
 
-            String writeStr = readLines.get(1).split(" ")[2];
+            String writeStr = readLines.get(1).split("\\s+")[2];
             m.diskWriteBytes = Long.parseLong(writeStr);
             //System.out.print("diskRead: " + m.diskReadBytes + " diskWrite: " + m.diskWriteBytes + "\n");
         }
@@ -301,7 +301,7 @@ class DockerMonitor {
             }
         }
 
-        if (resultLine != null) {
+        if (resultLine != null && resultLine.length() > 0) {
             resultLine = resultLine.trim();
             String receiveStr = resultLine.split("\\s+")[1];
             m.netRecBytes = Long.parseLong(receiveStr);
