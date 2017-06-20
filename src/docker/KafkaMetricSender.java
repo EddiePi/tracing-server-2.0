@@ -33,10 +33,12 @@ public class KafkaMetricSender {
     }
 
     public void send(DockerMetrics dm) {
+        String metricStr = buildMetricString(dm);
+        System.out.printf("sending metric string: %s\n", metricStr);
         producer.send(new ProducerRecord<String, String>(
                 kafkaTopic,
                 dm.containerId + "-metric",
-                buildMetricString(dm)));
+                metricStr));
     }
 
     private String buildMetricString(DockerMetrics dm) {

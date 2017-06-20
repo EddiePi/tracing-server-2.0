@@ -256,13 +256,28 @@ class DockerMonitor {
 
         String url = blkioPath + "blkio.throttle.io_service_bytes";
         List<String> readLines = readFileLines(url);
-        if (readLines != null || readLines.size() > 0) {
-            String readStr = readLines.get(0).split("\\s+")[2];
-            m.diskReadBytes = Long.parseLong(readStr);
+        if (readLines != null || readLines.size() >= 2) {
+            String[] wordsInLine = readLines.get(0).split("\\s+");
+            if(wordsInLine.length >= 3) {
+                try {
+                    if (wordsInLine.length >= 3) {
+                        String readStr = wordsInLine[2];
+                        m.diskReadBytes = Long.parseLong(readStr);
+                    } else {
+                        calRate = false;
+                    }
+                    wordsInLine = readLines.get(1).split("\\s+");
+                    if (wordsInLine.length >= 3) {
+                        String writeStr = wordsInLine[2];
+                        m.diskWriteBytes = Long.parseLong(writeStr);
+                    } else {
+                        calRate = false;
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    calRate = false;
+                }
 
-
-            String writeStr = readLines.get(1).split("\\s+")[2];
-            m.diskWriteBytes = Long.parseLong(writeStr);
+                }
             //System.out.print("diskRead: " + m.diskReadBytes + " diskWrite: " + m.diskWriteBytes + "\n");
         }
         return calRate;
