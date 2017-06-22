@@ -55,6 +55,7 @@ public class Tracer {
      * @param containerId
      */
     public void addContainerMonitor(String containerId) {
+        System.out.printf("adding docker monitor for %s\n", containerId);
         dockerMonitorManager.addDockerMonitor(containerId);
     }
 

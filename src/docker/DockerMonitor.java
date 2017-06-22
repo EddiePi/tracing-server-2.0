@@ -72,7 +72,7 @@ class DockerMonitor {
     public void start() {
         isRunning = true;
         monitorThread.start();
-        System.out.print("docker monitor thread started.\n");
+        System.out.printf("docker monitor for %s started.\n", dockerId);
         //monitorThread.start();
     }
 
