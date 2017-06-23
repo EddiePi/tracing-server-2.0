@@ -4,16 +4,16 @@ package tsdb;
  * Created by Eddie on 2017/6/22.
  */
 public class TSManager {
-    MetricKafkaChannel metricKafkaChannel;
+    KafkaToTsdbChannel kafkaToTsdbChannel;
     public TSManager() {
-        metricKafkaChannel = new MetricKafkaChannel();
+        kafkaToTsdbChannel = new KafkaToTsdbChannel();
     }
 
     public void start() {
-        metricKafkaChannel.start();
+        kafkaToTsdbChannel.start();
     }
 
     public void stop() {
-        metricKafkaChannel.stop();
+        kafkaToTsdbChannel.stop();
     }
 }
