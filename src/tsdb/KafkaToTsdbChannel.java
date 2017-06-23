@@ -28,7 +28,7 @@ public class KafkaToTsdbChannel {
     TracerConf conf = TracerConf.getInstance();
     TransferRunnable transferRunnable;
     Thread transferThread;
-    HttpClient client = new HttpClientImpl("localhost:4242");
+    HttpClient client;
     MetricBuilder builder = MetricBuilder.getInstance();
 
     public KafkaToTsdbChannel() {
@@ -42,6 +42,7 @@ public class KafkaToTsdbChannel {
         consumer = new KafkaConsumer<>(props);
         kafkaTopics = Arrays.asList("trace", "log");
         consumer.subscribe(kafkaTopics);
+        client = new HttpClientImpl(conf.getStringOrDefault("tracer.tsdb.server", "localhost:4242"));
 
         transferRunnable = new TransferRunnable();
         transferThread = new Thread(transferRunnable);

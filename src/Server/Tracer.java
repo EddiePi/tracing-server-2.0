@@ -18,6 +18,9 @@ public class Tracer {
 
     private boolean isTest = false;
 
+    private TracerConf  conf = TracerConf.getInstance();
+    private boolean isMaster = conf.getBooleanOrDefault("tracer.is-master", false);
+
     private class TracingRunnable implements Runnable {
         @Override
         public void run() {
@@ -48,10 +51,14 @@ public class Tracer {
     public void init() {
         logReaderManager = new LogReaderManager();
         dockerMonitorManager = new DockerMonitorManager();
-        tsManager = new TSManager();
+
+
         logReaderManager.start();
         tThread.start();
-        tsManager.start();
+        if(isMaster) {
+            tsManager = new TSManager();
+            tsManager.start();
+        }
     }
 
     /**
@@ -78,6 +85,8 @@ public class Tracer {
     public void stop() throws IOException {
         logReaderManager.stop();
         dockerMonitorManager.stop();
-        tsManager.stop();
+        if(isMaster) {
+            tsManager.stop();
+        }
     }
 }
