@@ -2,6 +2,7 @@ package Server;
 
 import docker.DockerMonitorManager;
 import log.LogReaderManager;
+import tsdb.TSManager;
 
 import java.io.IOException;
 
@@ -12,6 +13,9 @@ public class Tracer {
     private LogReaderManager logReaderManager;
 
     private DockerMonitorManager dockerMonitorManager;
+
+    private TSManager tsManager;
+
     private boolean isTest = false;
 
     private class TracingRunnable implements Runnable {
@@ -44,8 +48,10 @@ public class Tracer {
     public void init() {
         logReaderManager = new LogReaderManager();
         dockerMonitorManager = new DockerMonitorManager();
+        tsManager = new TSManager();
         logReaderManager.start();
         tThread.start();
+        tsManager.start();
     }
 
     /**
@@ -72,5 +78,6 @@ public class Tracer {
     public void stop() throws IOException {
         logReaderManager.stop();
         dockerMonitorManager.stop();
+        tsManager.stop();
     }
 }
