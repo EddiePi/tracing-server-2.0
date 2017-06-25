@@ -103,43 +103,51 @@ public class KafkaToTsdbChannel {
 
     private boolean metricTransformer(String metricStr) {
         String[] metrics = metricStr.split(",");
-        String containerId = metrics[0];
-        Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
-        Double cpuUsage = Double.valueOf(metrics[2]);
-        Long memoryUsage = Long.valueOf(metrics[3]);
-        Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
-        Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
-        String containerState = containerStatusRecorder.getState(containerId);
-        if(containerState == null) {
-            containerState = "NEW";
+        if(metrics.length < 8) {
+            return false;
+        }
+        try {
+            String containerId = metrics[0];
+            Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
+            Double cpuUsage = Double.valueOf(metrics[2]);
+            Long memoryUsage = Long.valueOf(metrics[3]);
+            Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
+            Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
+            String containerState = containerStatusRecorder.getState(containerId);
+            if (containerState == null) {
+                containerState = "NEW";
+            }
+
+            boolean hasMessage = false;
+            // cpu
+            builder.addMetric("cpu")
+                    .setDataPoint(timestamp, cpuUsage)
+                    .addTag("container", containerId)
+                    .addTag("state", containerState);
+
+            // memory
+            builder.addMetric("memory")
+                    .setDataPoint(timestamp, memoryUsage)
+                    .addTag("container", containerId)
+                    .addTag("state", containerState);
+
+            // disk
+            builder.addMetric("disk").
+                    setDataPoint(timestamp, diskRate).
+                    addTag("container", containerId)
+                    .addTag("state", containerState);
+
+            // network
+            builder.addMetric("network")
+                    .setDataPoint(timestamp, netRate)
+                    .addTag("container", containerId)
+                    .addTag("state", containerState);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            return false;
         }
 
-        boolean hasMessage = false;
-        // cpu
-        builder.addMetric("cpu")
-                .setDataPoint(timestamp, cpuUsage)
-                .addTag("container", containerId)
-                .addTag("state", containerState);
-
-        // memory
-        builder.addMetric("memory")
-                .setDataPoint(timestamp, memoryUsage)
-                .addTag("container", containerId)
-                .addTag("state", containerState);
-
-        // disk
-        builder.addMetric("disk").
-                setDataPoint(timestamp, diskRate).
-                addTag("container", containerId)
-                .addTag("state", containerState);
-
-        // network
-        builder.addMetric("network")
-                .setDataPoint(timestamp, netRate)
-                .addTag("container", containerId)
-                .addTag("state", containerState);
-
-        return hasMessage;
+        return true;
     }
 
 
