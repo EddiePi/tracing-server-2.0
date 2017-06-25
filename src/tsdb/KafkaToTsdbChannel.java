@@ -26,6 +26,7 @@ public class KafkaToTsdbChannel {
     Thread transferThread;
     TsdbMetricBuilder builder = TsdbMetricBuilder.getInstance();
     String databaseURI;
+    ContainerStatusRecorder containerStatusRecorder;
 
     public KafkaToTsdbChannel() {
         props = new Properties();
@@ -39,6 +40,13 @@ public class KafkaToTsdbChannel {
         kafkaTopics = Arrays.asList("trace", "log");
         consumer.subscribe(kafkaTopics);
         databaseURI = conf.getStringOrDefault("tracer.tasb.server", "localhost:4242");
+        if(!databaseURI.matches("http://.*")) {
+            databaseURI = "http://" + databaseURI;
+        }
+        if(!databaseURI.matches(".*/api/put")) {
+            databaseURI = databaseURI + "/api/put";
+        }
+        containerStatusRecorder = ContainerStatusRecorder.getInstance();
 
         transferRunnable = new TransferRunnable();
         transferThread = new Thread(transferRunnable);
@@ -55,16 +63,20 @@ public class KafkaToTsdbChannel {
                     String key = record.key();
                     String value = record.value();
                     boolean hasMessage = false;
-                    if (key.contains("metric")) {
+                    if (key.contains("nomemanager")) {
+                        nodemanagerLogParser(value);
+                    } else if (key.contains("metric")) {
                         hasMessage = metricTransformer(value);
-                    } else if (key.contains("nodemanager")) {
-                        hasMessage = nodemanagerLogTransformer(value);
                     }
                     if (hasMessage) {
                         try {
                             String message = builder.build(true);
-                            HTTPRequest.sendPost(databaseURI, message);
-                            System.out.println(message);
+
+                            // TODO: maintain the connection for performance
+                            String response = HTTPRequest.sendPost(databaseURI, message);
+                            if(response != null || !response.equals("")) {
+                                System.out.printf("Unexpected response: %s\n" , response);
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -97,26 +109,49 @@ public class KafkaToTsdbChannel {
         Long memoryUsage = Long.valueOf(metrics[3]);
         Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
         Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
+        String containerState = containerStatusRecorder.getState(containerId);
+        if(containerState == null) {
+            containerState = "NEW";
+        }
 
         boolean hasMessage = false;
         // cpu
-        builder.addMetric("cpu").setDataPoint(timestamp, cpuUsage).addTag("container", containerId);
+        builder.addMetric("cpu")
+                .setDataPoint(timestamp, cpuUsage)
+                .addTag("container", containerId)
+                .addTag("state", containerState);
 
         // memory
-        builder.addMetric("memory").setDataPoint(timestamp, memoryUsage).addTag("container", containerId);
+        builder.addMetric("memory")
+                .setDataPoint(timestamp, memoryUsage)
+                .addTag("container", containerId)
+                .addTag("state", containerState);
 
         // disk
-        builder.addMetric("disk").setDataPoint(timestamp, diskRate).addTag("container", containerId);
+        builder.addMetric("disk").
+                setDataPoint(timestamp, diskRate).
+                addTag("container", containerId)
+                .addTag("state", containerState);
 
         // network
-        builder.addMetric("network").setDataPoint(timestamp, netRate).addTag("container", containerId);
+        builder.addMetric("network")
+                .setDataPoint(timestamp, netRate)
+                .addTag("container", containerId)
+                .addTag("state", containerState);
 
         return hasMessage;
     }
 
 
-    private boolean nodemanagerLogTransformer(String logStr) {
-        return false;
+    private void nodemanagerLogParser(String logStr) {
+        if(!logStr.matches(".*Container.*transitioned from.*")) {
+            return;
+        }
+        String[] words = logStr.split("\\s+");
+        String nextState = words[words.length - 1];
+        String containerId = words[words.length - 6];
+        containerStatusRecorder.putState(containerId, nextState);
+        return;
     }
 
 }
