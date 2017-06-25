@@ -4,11 +4,6 @@ import Server.TracerConf;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.opentsdb.client.ExpectResponse;
-import org.opentsdb.client.HttpClient;
-import org.opentsdb.client.HttpClientImpl;
-import org.opentsdb.client.builder.MetricBuilder;
-import org.opentsdb.client.response.Response;
 
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -28,8 +23,7 @@ public class KafkaToTsdbChannel {
     TracerConf conf = TracerConf.getInstance();
     TransferRunnable transferRunnable;
     Thread transferThread;
-    HttpClient client;
-    MetricBuilder builder = MetricBuilder.getInstance();
+    TsdbMetricBuilder builder = TsdbMetricBuilder.getInstance();
 
     public KafkaToTsdbChannel() {
         props = new Properties();
@@ -42,7 +36,6 @@ public class KafkaToTsdbChannel {
         consumer = new KafkaConsumer<>(props);
         kafkaTopics = Arrays.asList("trace", "log");
         consumer.subscribe(kafkaTopics);
-        client = new HttpClientImpl(conf.getStringOrDefault("tracer.tsdb.server", "localhost:4242"));
 
         transferRunnable = new TransferRunnable();
         transferThread = new Thread(transferRunnable);
@@ -66,9 +59,8 @@ public class KafkaToTsdbChannel {
                     }
                     if (hasMessage) {
                         try {
-                            Response response = client.pushMetrics(builder, ExpectResponse.SUMMARY);
-                            System.out.println(response);
-                        } catch (IOException e) {
+                            System.out.println();
+                        } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
@@ -98,8 +90,17 @@ public class KafkaToTsdbChannel {
         Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
 
         boolean hasMessage = false;
-        //cpu
+        // cpu
         builder.addMetric("cpu").setDataPoint(timestamp, cpuUsage).addTag("container", containerId);
+
+        // memory
+        builder.addMetric("memory").setDataPoint(timestamp, memoryUsage).addTag("container", containerId);
+
+        // disk
+        builder.addMetric("disk").setDataPoint(timestamp, diskRate).addTag("container", containerId);
+
+        // network
+        builder.addMetric("network").setDataPoint(timestamp, netRate).addTag("container", containerId);
 
         return hasMessage;
     }
