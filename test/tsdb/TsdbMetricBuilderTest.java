@@ -35,7 +35,7 @@ public class TsdbMetricBuilderTest {
     @Test
     public void build() throws Exception {
         String jsonRes;
-        jsonRes = builder.build();
+        jsonRes = builder.build(true);
         System.out.printf("the build result is: %s.\n", jsonRes);
     }
 

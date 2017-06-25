@@ -1,6 +1,7 @@
 package tsdb;
 
 import Server.TracerConf;
+import Utils.HTTPRequest;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -24,6 +25,7 @@ public class KafkaToTsdbChannel {
     TransferRunnable transferRunnable;
     Thread transferThread;
     TsdbMetricBuilder builder = TsdbMetricBuilder.getInstance();
+    String databaseURI;
 
     public KafkaToTsdbChannel() {
         props = new Properties();
@@ -36,6 +38,7 @@ public class KafkaToTsdbChannel {
         consumer = new KafkaConsumer<>(props);
         kafkaTopics = Arrays.asList("trace", "log");
         consumer.subscribe(kafkaTopics);
+        databaseURI = conf.getStringOrDefault("tracer.tasb.server", "localhost:4242");
 
         transferRunnable = new TransferRunnable();
         transferThread = new Thread(transferRunnable);
@@ -59,16 +62,22 @@ public class KafkaToTsdbChannel {
                     }
                     if (hasMessage) {
                         try {
-                            System.out.println();
-                        } catch (Exception e) {
+                            String message = builder.build(true);
+                            HTTPRequest.sendPost(databaseURI, message);
+                            System.out.println(message);
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    }
-                    System.out.printf("offset = %d, key = %s, value = %s\n", record.offset(), record.key(), record.value());
 
+                    }
                 }
-                consumer.close(5, TimeUnit.SECONDS);
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
+            consumer.close(5, TimeUnit.SECONDS);
         }
     }
 

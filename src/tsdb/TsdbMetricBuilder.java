@@ -60,14 +60,18 @@ public class TsdbMetricBuilder {
      * @throws IOException
      *             if metrics cannot be converted to JSON
      */
-    public String build() throws IOException {
+    public String build(boolean needClear) throws IOException {
         for (TsdbMetric metric : metrics) {
             // verify that there is at least one tag for each metric
             if(metric.getTags().size() <= 0 || metric.getName() == null) {
                 System.out.printf("metric must have at least one tag.\n");
             }
         }
-        return mapper.toJson(metrics);
+        String resultJson = mapper.toJson(metrics);
+        if(needClear) {
+            clear();
+        }
+        return resultJson;
     }
 
     public void clear() {
