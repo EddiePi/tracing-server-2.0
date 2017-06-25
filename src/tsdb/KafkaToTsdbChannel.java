@@ -63,6 +63,7 @@ public class KafkaToTsdbChannel {
                     if (hasMessage) {
                         try {
                             String message = builder.build(true);
+                            System.out.printf("sending metric to database %s.\n", message);
                             HTTPRequest.sendPost(databaseURI, message);
                             System.out.println(message);
                         } catch (IOException e) {
@@ -91,27 +92,35 @@ public class KafkaToTsdbChannel {
 
     private boolean metricTransformer(String metricStr) {
         String[] metrics = metricStr.split(",");
-        String containerId = metrics[0];
-        Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
-        Double cpuUsage = Double.valueOf(metrics[2]);
-        Long memoryUsage = Long.valueOf(metrics[3]);
-        Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
-        Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
+        if(metrics.length < 8) {
+            return false;
+        }
+        try {
+            String containerId = metrics[0];
+            Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
+            Double cpuUsage = Double.valueOf(metrics[2]);
+            Long memoryUsage = Long.valueOf(metrics[3]);
+            Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
+            Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
 
-        boolean hasMessage = false;
-        // cpu
-        builder.addMetric("cpu").setDataPoint(timestamp, cpuUsage).addTag("container", containerId);
+            // cpu
+            builder.addMetric("cpu").setDataPoint(timestamp, cpuUsage).addTag("container", containerId);
 
-        // memory
-        builder.addMetric("memory").setDataPoint(timestamp, memoryUsage).addTag("container", containerId);
+            // memory
+            builder.addMetric("memory").setDataPoint(timestamp, memoryUsage).addTag("container", containerId);
 
-        // disk
-        builder.addMetric("disk").setDataPoint(timestamp, diskRate).addTag("container", containerId);
+            // disk
+            builder.addMetric("disk").setDataPoint(timestamp, diskRate).addTag("container", containerId);
 
-        // network
-        builder.addMetric("network").setDataPoint(timestamp, netRate).addTag("container", containerId);
+            // network
+            builder.addMetric("network").setDataPoint(timestamp, netRate).addTag("container", containerId);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            return false;
+        }
 
-        return hasMessage;
+
+        return true;
     }
 
 
