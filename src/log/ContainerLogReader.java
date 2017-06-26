@@ -1,6 +1,7 @@
 package log;
 
 import java.io.*;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,6 +21,7 @@ public class ContainerLogReader {
     volatile Boolean isChecking = true;
     String containerId;
     Thread checkingThread;
+    ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
 
     public int timeoutCount;
 
@@ -81,6 +83,7 @@ public class ContainerLogReader {
                     String line;
                     messageBuffer.clear();
                     while((line = bufferedReader.readLine()) != null) {
+                        recordContainerState(line);
                         messageBuffer.add(line);
                     }
                     for(String message: messageBuffer) {
@@ -115,6 +118,18 @@ public class ContainerLogReader {
     private String parseContainerId(String containerPath) {
         String[] paths = containerPath.split("/");
         return paths[paths.length - 1];
+    }
+
+    private void recordContainerState(String logStr) {
+        if(!logStr.matches(".*Container.*transitioned from.*")) {
+            return;
+        }
+        String[] words = logStr.split("\\s+");
+        Long timestamp = Timestamp.valueOf(words[0] + " " + words[1]).getTime();
+        String nextState = words[words.length - 1];
+        String containerId = words[words.length - 6];
+        System.out.printf("log message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
+        recorder.putState(containerId, nextState, timestamp);
     }
 
     /**

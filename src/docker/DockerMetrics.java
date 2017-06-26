@@ -10,6 +10,8 @@ public class DockerMetrics {
     // unit: second
     public Long timestamp;
 
+    public String state;
+
     // cpu usage
     public Long sysCpuTime = 0L;
     public Long dockerCpuTime = 0L;

@@ -28,7 +28,6 @@ public class KafkaToTsdbChannel {
     Thread transferThread;
     TsdbMetricBuilder builder = TsdbMetricBuilder.getInstance();
     String databaseURI;
-    ContainerStatusRecorder containerStatusRecorder;
 
     public KafkaToTsdbChannel() {
         props = new Properties();
@@ -48,7 +47,6 @@ public class KafkaToTsdbChannel {
         if(!databaseURI.matches(".*/api/put")) {
             databaseURI = databaseURI + "/api/put";
         }
-        containerStatusRecorder = new ContainerStatusRecorder();
 
         transferRunnable = new TransferRunnable();
         transferThread = new Thread(transferRunnable);
@@ -65,9 +63,7 @@ public class KafkaToTsdbChannel {
                     String key = record.key();
                     String value = record.value();
                     boolean hasMessage = false;
-                    if (key.contains("nodemanager")) {
-                        nodemanagerLogParser(value);
-                    } else if (key.contains("metric")) {
+                    if (key.contains("metric")) {
                         hasMessage = metricTransformer(value);
                     }
                     if (hasMessage) {
@@ -105,7 +101,7 @@ public class KafkaToTsdbChannel {
 
     private boolean metricTransformer(String metricStr) {
         String[] metrics = metricStr.split(",");
-        if(metrics.length < 8) {
+        if(metrics.length < 9) {
             return false;
         }
         try {
@@ -115,7 +111,7 @@ public class KafkaToTsdbChannel {
             Long memoryUsage = Long.valueOf(metrics[3]);
             Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
             Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
-            String containerState = containerStatusRecorder.getState(containerId);
+            String containerState = metrics[8];
             if (containerState == null) {
                 containerState = "NEW";
             }
@@ -150,41 +146,5 @@ public class KafkaToTsdbChannel {
         }
 
         return true;
-    }
-
-
-    private void nodemanagerLogParser(String logStr) {
-        if(!logStr.matches(".*Container.*transitioned from.*")) {
-            return;
-        }
-
-        String[] words = logStr.split("\\s+");
-        String nextState = words[words.length - 1];
-        String containerId = words[words.length - 6];
-        System.out.printf("log message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
-        containerStatusRecorder.putState(containerId, nextState);
-        return;
-    }
-
-
-    private class ContainerStatusRecorder {
-        private ConcurrentMap<String, String> statusMap = new ConcurrentHashMap<>();
-
-        private ContainerStatusRecorder(){}
-
-        public void putState(String containerId, String state) {
-            statusMap.put(containerId, state);
-        }
-
-        public String getState(String containerId) {
-            String res = statusMap.getOrDefault(containerId, null);
-            if (res == null) {
-                return null;
-            }
-            if(res.equals("DONE")) {
-                statusMap.remove(containerId);
-            }
-            return res;
-        }
     }
 }
