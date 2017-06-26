@@ -8,6 +8,7 @@ import Utils.FileWatcher.WatchDir;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ public class LogReaderManager {
     CheckAppDirRunnable checkingRunnable;
     Thread checkingThread;
     Thread nodeManagerReadThread;
+    ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
 
     public LogReaderManager() {
         conf = TracerConf.getInstance();
@@ -80,8 +82,8 @@ public class LogReaderManager {
                         isNavigating = false;
                     }
                     while ((line = bufferedReader.readLine()) != null) {
+                        recordContainerState(line);
                         messageBuffer.add(line);
-
                     }
                     for (String message : messageBuffer) {
                         // TEST
@@ -157,5 +159,17 @@ public class LogReaderManager {
         for(ContainerLogReader logReader: runningContainerMap.values()) {
             logReader.stop();
         }
+    }
+
+    private void recordContainerState(String logStr) {
+        if(!logStr.matches(".*Container.*transitioned from.*")) {
+            return;
+        }
+        String[] words = logStr.split("\\s+");
+        Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
+        String nextState = words[words.length - 1];
+        String containerId = words[words.length - 6];
+        System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
+        recorder.putState(containerId, nextState, timestamp);
     }
 }
