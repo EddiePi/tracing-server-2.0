@@ -11,6 +11,8 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 
@@ -46,7 +48,7 @@ public class KafkaToTsdbChannel {
         if(!databaseURI.matches(".*/api/put")) {
             databaseURI = databaseURI + "/api/put";
         }
-        containerStatusRecorder = ContainerStatusRecorder.getInstance();
+        containerStatusRecorder = new ContainerStatusRecorder();
 
         transferRunnable = new TransferRunnable();
         transferThread = new Thread(transferRunnable);
@@ -84,7 +86,7 @@ public class KafkaToTsdbChannel {
                     }
                 }
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -155,11 +157,34 @@ public class KafkaToTsdbChannel {
         if(!logStr.matches(".*Container.*transitioned from.*")) {
             return;
         }
+
         String[] words = logStr.split("\\s+");
         String nextState = words[words.length - 1];
         String containerId = words[words.length - 6];
+        System.out.printf("log message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
         containerStatusRecorder.putState(containerId, nextState);
         return;
     }
 
+
+    private class ContainerStatusRecorder {
+        private ConcurrentMap<String, String> statusMap = new ConcurrentHashMap<>();
+
+        private ContainerStatusRecorder(){}
+
+        public void putState(String containerId, String state) {
+            statusMap.put(containerId, state);
+        }
+
+        public String getState(String containerId) {
+            String res = statusMap.getOrDefault(containerId, null);
+            if (res == null) {
+                return null;
+            }
+            if(res.equals("DONE")) {
+                statusMap.remove(containerId);
+            }
+            return res;
+        }
+    }
 }
