@@ -72,7 +72,7 @@ public class KafkaToTsdbChannel {
 
                             // TODO: maintain the connection for performance
                             String response = HTTPRequest.sendPost(databaseURI, message);
-                            if(response != null || !response.equals("")) {
+                            if(!response.matches("\\s+")) {
                                 System.out.printf("Unexpected response: %s\n" , response);
                             }
                         } catch (IOException e) {

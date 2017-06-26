@@ -121,6 +121,7 @@ public class ContainerLogReader {
     }
 
     private void recordContainerState(String logStr) {
+        System.out.printf("raw message: %s\n", logStr);
         if(!logStr.matches(".*Container.*transitioned from.*")) {
             return;
         }
@@ -128,7 +129,7 @@ public class ContainerLogReader {
         Long timestamp = Timestamp.valueOf(words[0] + " " + words[1]).getTime();
         String nextState = words[words.length - 1];
         String containerId = words[words.length - 6];
-        System.out.printf("log message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
+        System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
         recorder.putState(containerId, nextState, timestamp);
     }
 
