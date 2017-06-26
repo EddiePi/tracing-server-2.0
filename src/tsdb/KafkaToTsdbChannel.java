@@ -63,7 +63,7 @@ public class KafkaToTsdbChannel {
                     String key = record.key();
                     String value = record.value();
                     boolean hasMessage = false;
-                    if (key.contains("nomemanager")) {
+                    if (key.contains("nodemanager")) {
                         nodemanagerLogParser(value);
                     } else if (key.contains("metric")) {
                         hasMessage = metricTransformer(value);
