@@ -38,33 +38,17 @@ class DockerMonitor {
 
     volatile private boolean isRunning;
 
+    private boolean isRealDockerOn = false;
+
     public DockerMonitor(String containerId, DockerMonitorManager dmManger) {
         this.containerId = containerId;
         this.manager = dmManger;
-        for(int i = 0; i < 5; i++) {
-            this.dockerId = runShellCommand("docker inspect --format={{.Id}} " + containerId);
-            if(this.dockerId.contains("Error") || this.dockerId.length() == 0) {
-                System.out.print("docker for " + containerId + " is not started yet. retry in 1 sec.\n");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                System.out.print(String.format("docker id: %s\n", dockerId));
-                break;
-            }
-        }
         if(this.dockerId.contains("Error")) {
             System.out.print("cannot get docker for " + containerId + "aborting\n");
             return;
         }
 
-        this.dockerPid = runShellCommand("docker inspect --format={{.State.Pid}} " + containerId).trim();
-        this.cpuPath = "/sys/fs/cgroup/cpu,cpuacct/docker/" + dockerId + "/";
-        this.memoryPath = "/sys/fs/cgroup/memory/docker/" + dockerId + "/";
-        this.blkioPath= "/sys/fs/cgroup/blkio/docker/" + dockerId + "/";
-        this.netFilePath = "/proc/" + dockerPid + "/net/dev";
+
         ifaceName  = conf.getStringOrDefault("tracer.docker.iface-name", "eth0");
 
         monitorRunnable = new MonitorRunnable();
@@ -130,9 +114,25 @@ class DockerMonitor {
             //int count = 3;
             //int index = 0;
             while (isRunning) {
-                // monitor the docker info
-                updateCgroupValues();
-                // printStatus();
+                if(!isRealDockerOn) {
+                    dockerId = runShellCommand("docker inspect --format={{.Id}} " + containerId);
+                    if(dockerId.contains("Error") || dockerId.length() == 0) {
+                        System.out.printf("docker for %s is not started yet. retry in %d milliseconds.\n",
+                                containerId, monitorInterval);
+                    } else {
+                        dockerPid = runShellCommand("docker inspect --format={{.State.Pid}} " + containerId).trim();
+                        cpuPath = "/sys/fs/cgroup/cpu,cpuacct/docker/" + dockerId + "/";
+                        memoryPath = "/sys/fs/cgroup/memory/docker/" + dockerId + "/";
+                        blkioPath= "/sys/fs/cgroup/blkio/docker/" + dockerId + "/";
+                        netFilePath = "/proc/" + dockerPid + "/net/dev";
+                        isRealDockerOn = true;
+                        System.out.print(String.format("docker id: %s\n", dockerId));
+                    }
+                } else {
+                    // monitor the docker info
+                    updateCgroupValues();
+                    // printStatus();
+                }
                 //if we come here it means we need to sleep for monitorInterval milliseconds
                 try {
                     Thread.sleep(monitorInterval);
@@ -145,6 +145,12 @@ class DockerMonitor {
         public void stop() {
             isRunning = false;
         }
+    }
+
+    private void sendZeroMetrics() {
+        DockerMetrics zeroMetrics = new DockerMetrics(null, containerId);
+        getState(zeroMetrics);
+        metricSender.send(zeroMetrics);
     }
 
     public void updateCgroupValues() {

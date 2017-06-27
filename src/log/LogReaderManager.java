@@ -23,6 +23,7 @@ public class LogReaderManager {
     File appRootDir;
     File[] applicationDirs;
     File nodeManagerLog;
+    Tracer tracer = Tracer.getInstance();
     // Key is the container's id.
     public ConcurrentMap<String, ContainerLogReader> runningContainerMap = new ConcurrentHashMap<>();
     NodeManagerLogReaderRunnable nodeManagerReaderRunnable;
@@ -112,7 +113,6 @@ public class LogReaderManager {
     }
 
     private class CheckAppDirRunnable implements Runnable {
-        Tracer tracer = Tracer.getInstance();
         WatchDir watchDir;
         @Override
         public void run() {
@@ -127,7 +127,6 @@ public class LogReaderManager {
                         String name = file.getName();
                         if(name.contains("container")) {
                             runningContainerMap.put(name, new ContainerLogReader(file.getAbsolutePath()));
-                            tracer.addContainerMonitor(name);
                         }
                     }
 
@@ -164,14 +163,25 @@ public class LogReaderManager {
     }
 
     private void recordContainerState(String logStr) {
-        if(!logStr.matches(".*Container.*transitioned from.*")) {
-            return;
+        if(logStr.matches("Start request for container.*")) {
+
+            // here we notify the docker monitor to start.
+            String[] words = logStr.split("\\s+");
+            Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
+            String firstState = "NEW";
+            String containerId = words[words.length - 4];
+            System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, firstState);
+            recorder.putState(containerId, firstState, timestamp);
+
+            // start docker monitor
+            tracer.addContainerMonitor(containerId);
+        } else if(logStr.matches(".*Container.*transitioned from.*")) {
+            String[] words = logStr.split("\\s+");
+            Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
+            String nextState = words[words.length - 1];
+            String containerId = words[words.length - 6];
+            System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
+            recorder.putState(containerId, nextState, timestamp);
         }
-        String[] words = logStr.split("\\s+");
-        Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
-        String nextState = words[words.length - 1];
-        String containerId = words[words.length - 6];
-        System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
-        recorder.putState(containerId, nextState, timestamp);
     }
 }
