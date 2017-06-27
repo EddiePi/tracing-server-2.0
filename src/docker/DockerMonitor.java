@@ -133,9 +133,9 @@ class DockerMonitor {
                 // monitor the docker info
                 updateCgroupValues();
                 // printStatus();
-                //if we come here it means we need to sleep for 1s
+                //if we come here it means we need to sleep for monitorInterval milliseconds
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(monitorInterval);
                 } catch (InterruptedException e) {
                     //do nothing
                 }
