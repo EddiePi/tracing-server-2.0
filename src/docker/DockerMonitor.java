@@ -117,6 +117,7 @@ class DockerMonitor {
                 if(!isRealDockerOn) {
                     dockerId = runShellCommand("docker inspect --format={{.Id}} " + containerId);
                     if(dockerId.contains("Error") || dockerId.length() == 0) {
+                        sendZeroMetrics();
                         System.out.printf("docker for %s is not started yet. retry in %d milliseconds.\n",
                                 containerId, monitorInterval);
                     } else {
