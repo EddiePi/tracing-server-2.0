@@ -103,6 +103,7 @@ public class KafkaToTsdbChannel {
         if(metrics.length < 9) {
             return false;
         }
+        System.out.printf("metricStr: %s\n", metricStr);
         try {
             String containerId = metrics[0];
             String appId = containerIdToAppId(containerId);

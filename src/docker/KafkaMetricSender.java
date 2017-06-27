@@ -56,7 +56,7 @@ public class KafkaMetricSender {
     }
 
     private String parseTimeStr(Long timestamp) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         Timestamp ts = new Timestamp(timestamp);
         String dateStr = sdf.format(ts);
         return dateStr;
