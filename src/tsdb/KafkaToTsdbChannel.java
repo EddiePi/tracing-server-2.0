@@ -62,7 +62,7 @@ public class KafkaToTsdbChannel {
                     String key = record.key();
                     String value = record.value();
                     boolean hasMessage = false;
-                    if (key.contains("metric")) {
+                    if (key.matches("container.*-metric")) {
                         hasMessage = metricTransformer(value);
                     }
                     if (hasMessage) {
@@ -112,11 +112,7 @@ public class KafkaToTsdbChannel {
             Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
             Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
             String containerState = metrics[8];
-            if (containerState == null) {
-                containerState = "NEW";
-            }
 
-            boolean hasMessage = false;
             // cpu
             builder.addMetric("cpu")
                     .setDataPoint(timestamp, cpuUsage)
