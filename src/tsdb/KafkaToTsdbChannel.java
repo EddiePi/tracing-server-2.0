@@ -154,7 +154,7 @@ public class KafkaToTsdbChannel {
 
     private String containerIdToAppId(String containerId) {
         String[] parts = containerId.split("_");
-        String appId = "application_" + parts[parts.length - 3] + "_" + parts[parts.length - 2];
+        String appId = "application_" + parts[parts.length - 4] + "_" + parts[parts.length - 3];
         return appId;
     }
 }
