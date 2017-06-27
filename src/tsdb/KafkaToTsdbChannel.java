@@ -11,13 +11,12 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 
 /**
  * Created by Eddie on 2017/6/22.
+ * This class converts the message format in kafka to the format for TSDB
  */
 public class KafkaToTsdbChannel {
     Properties props;
@@ -106,6 +105,7 @@ public class KafkaToTsdbChannel {
         }
         try {
             String containerId = metrics[0];
+            String appId = containerIdToAppId(containerId);
             Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
             Double cpuUsage = Double.valueOf(metrics[2]);
             Long memoryUsage = Long.valueOf(metrics[3]);
@@ -120,24 +120,28 @@ public class KafkaToTsdbChannel {
             // cpu
             builder.addMetric("cpu")
                     .setDataPoint(timestamp, cpuUsage)
+                    .addTag("app", appId)
                     .addTag("container", containerId)
                     .addTag("state", containerState);
 
             // memory
             builder.addMetric("memory")
                     .setDataPoint(timestamp, memoryUsage)
+                    .addTag("app", appId)
                     .addTag("container", containerId)
                     .addTag("state", containerState);
 
             // disk
-            builder.addMetric("disk").
-                    setDataPoint(timestamp, diskRate).
-                    addTag("container", containerId)
+            builder.addMetric("disk")
+                    .setDataPoint(timestamp, diskRate)
+                    .addTag("app", appId)
+                    .addTag("container", containerId)
                     .addTag("state", containerState);
 
             // network
             builder.addMetric("network")
                     .setDataPoint(timestamp, netRate)
+                    .addTag("app", appId)
                     .addTag("container", containerId)
                     .addTag("state", containerState);
         } catch (NumberFormatException e) {
@@ -146,5 +150,11 @@ public class KafkaToTsdbChannel {
         }
 
         return true;
+    }
+
+    private String containerIdToAppId(String containerId) {
+        String[] parts = containerId.split("_");
+        String appId = "application_" + parts[parts.length - 3] + "_" + parts[parts.length - 2];
+        return appId;
     }
 }
