@@ -82,6 +82,8 @@ public class LogReaderManager {
                         isNavigating = false;
                     }
                     while ((line = bufferedReader.readLine()) != null) {
+
+                        // record the container state. metric uses this information.
                         recordContainerState(line);
                         messageBuffer.add(line);
                     }
@@ -90,7 +92,7 @@ public class LogReaderManager {
                         // System.out.printf("%s\n", message);
                         logSender.send(message);
                     }
-                    Thread.sleep(1000);
+                    Thread.sleep(20);
 
                 } catch (InterruptedException e) {
 

@@ -118,14 +118,15 @@ class DockerMonitor {
     }
 
     private class MonitorRunnable implements Runnable {
-
+        TracerConf conf = TracerConf.getInstance();
+        long monitorInterval = conf.getIntegerOrDefault("tracer.docker.monitor-interval", 10);
         @Override
         public void run(){
-            try {
-                Thread.sleep(1100);
-            } catch (InterruptedException e) {
-                // do nothing
-            }
+//            try {
+//                Thread.sleep(1100);
+//            } catch (InterruptedException e) {
+//                // do nothing
+//            }
             //int count = 3;
             //int index = 0;
             while (isRunning) {
