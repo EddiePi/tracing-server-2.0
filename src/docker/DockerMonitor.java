@@ -39,17 +39,18 @@ class DockerMonitor {
     volatile private boolean isRunning;
 
     private boolean isRealDockerOn = false;
+    private long monitorInterval;
 
     public DockerMonitor(String containerId, DockerMonitorManager dmManger) {
         this.containerId = containerId;
         this.manager = dmManger;
-        if(this.dockerId.contains("Error")) {
-            System.out.print("cannot get docker for " + containerId + "aborting\n");
-            return;
-        }
-
 
         ifaceName  = conf.getStringOrDefault("tracer.docker.iface-name", "eth0");
+        if (conf.getBooleanOrDefault("tracer.docker.ms-resolution", false)) {
+            monitorInterval = conf.getIntegerOrDefault("tracer.docker.monitor-interval", 50);
+        } else {
+            monitorInterval = 1000;
+        }
 
         monitorRunnable = new MonitorRunnable();
         monitorThread = new Thread(monitorRunnable);
@@ -58,8 +59,6 @@ class DockerMonitor {
     public void start() {
         isRunning = true;
         monitorThread.start();
-        System.out.printf("docker monitor for %s started.\n", dockerId);
-        //monitorThread.start();
     }
 
     public void stop() {
@@ -103,7 +102,7 @@ class DockerMonitor {
 
     private class MonitorRunnable implements Runnable {
         TracerConf conf = TracerConf.getInstance();
-        long monitorInterval = conf.getIntegerOrDefault("tracer.docker.monitor-interval", 10);
+
         @Override
         public void run(){
 //            try {

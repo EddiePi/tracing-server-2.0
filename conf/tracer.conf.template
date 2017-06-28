@@ -1,4 +1,5 @@
-tracer.docker.monitor-interval  20
+tracer.docker.monitor-interval      20
+tracer.docker.monitor.ms-resolution     false
 
 tracer.kafka.bootstrap.servers   localhost:9092
 

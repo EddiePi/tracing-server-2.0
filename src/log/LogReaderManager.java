@@ -163,7 +163,7 @@ public class LogReaderManager {
     }
 
     private void recordContainerState(String logStr) {
-        if(logStr.matches("Start request for container.*")) {
+        if(logStr.matches(".*Start request for container.*")) {
 
             // here we notify the docker monitor to start.
             String[] words = logStr.split("\\s+");
