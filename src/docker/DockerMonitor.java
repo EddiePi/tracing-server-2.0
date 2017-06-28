@@ -87,7 +87,7 @@ class DockerMonitor {
             } catch (IOException e) {
                 count++;
                 try {
-                    Thread.sleep(100*count);
+                    Thread.sleep(100 * count);
                 } catch (InterruptedException e1) {
                     // TODO Auto-generated catch block
                     e1.printStackTrace();
@@ -101,7 +101,6 @@ class DockerMonitor {
     }
 
     private class MonitorRunnable implements Runnable {
-        TracerConf conf = TracerConf.getInstance();
 
         @Override
         public void run(){

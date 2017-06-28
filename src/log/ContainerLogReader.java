@@ -89,7 +89,7 @@ public class ContainerLogReader {
                         // System.out.printf("%s\n", message);
                         logSender.send(message);
                     }
-                    Thread.sleep(1000);
+                    Thread.sleep(200);
                 }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
