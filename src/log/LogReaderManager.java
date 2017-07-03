@@ -48,6 +48,9 @@ public class LogReaderManager {
         }
         String nodeManagerDir = conf.getStringOrDefault("tracer.log.nodemanager.root", "~/hadoop-2.7.3/logs");
         nodeManagerLog = new File(nodeManagerDir + "/yarn-" + username + "-nodemanager-" + hostname + ".log");
+        if(!nodeManagerLog.exists()) {
+            nodeManagerLog = new File(nodeManagerDir + "/hadoop-" + username + "-nodemanager-" + hostname + ".log");
+        }
 
         nodeManagerReaderRunnable = new NodeManagerLogReaderRunnable();
         checkingRunnable = new CheckAppDirRunnable();
