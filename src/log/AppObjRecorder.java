@@ -37,10 +37,14 @@ public class AppObjRecorder {
             Pattern pattern = Pattern.compile(mark.regex);
             Matcher matcher = pattern.matcher(message);
             if(matcher.matches()) {
+                System.out.printf("app log message is matched: %s.\n", message);
                 if(matcher.groupCount() >= 1) {
+
                     String value = matcher.group(1);
                     String[] words = message.split("\\s+");
                     Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
+                    System.out.printf("going to update app info. name: %s, value: %s, isFinish: %b\n",
+                            mark.name, value, mark.isFinishMark);
                     updateInfo(containerId, mark.name, value, timestamp, mark.isFinishMark);
                 }
             }

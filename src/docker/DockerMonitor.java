@@ -193,6 +193,11 @@ class DockerMonitor {
         List<String> temp = objRecorder.getInfo(m.containerId, m.timestamp);
         if (temp != null) {
             m.eventList.addAll(temp);
+            System.out.print("current app event: ");
+            for(String event: temp){
+                System.out.print(event + "\t");
+            }
+            System.out.print("\n");
         }
     }
 

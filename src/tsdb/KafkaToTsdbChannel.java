@@ -167,6 +167,7 @@ public class KafkaToTsdbChannel {
             if(tagNValue.length < 2) {
                 continue;
             }
+            System.out.printf("adding obj info: %s:%s\n", tagNValue[0], tagNValue[1]);
             tm.addTag(tagNValue[0], tagNValue[1]);
         }
     }
