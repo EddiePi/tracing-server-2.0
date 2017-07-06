@@ -53,10 +53,14 @@ public class AppObjRecorder {
 
     public void updateInfo(String containerId, String name, String value, Long timestamp, boolean isFinish) {
         Map<String, ObjInfoWithTimestamp> objInfoWithTimestampMap =
-                timestampInfoMap.getOrDefault(containerId, new HashMap<>());
+                timestampInfoMap.getOrDefault(containerId, null);
         if(isFinish) {
             objInfoWithTimestampMap.remove(name);
         } else {
+            if (objInfoWithTimestampMap== null) {
+                objInfoWithTimestampMap = new HashMap<>();
+                timestampInfoMap.put(containerId, objInfoWithTimestampMap);
+            }
             ObjInfoWithTimestamp objInfoWithTimestamp = new ObjInfoWithTimestamp(name, value, timestamp);
             objInfoWithTimestampMap.put(name, objInfoWithTimestamp);
         }
