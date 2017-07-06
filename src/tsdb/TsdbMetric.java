@@ -8,10 +8,10 @@ import java.util.Map;
 
 /**
  * A metric contains measurements or data points. Each data point has a time
- * stamp of when the measurement occurred and a value that is either a long or
+ * stamp of when the measurement occurred and a valueRegex that is either a long or
  * double and optionally contains tags. Tags are labels that can be added to
  * better identify the metric. For example, if the measurement was done on
- * server1 then you might add a tag named "host" with a value of "server1". Note
+ * server1 then you might add a tag named "host" with a valueRegex of "server1". Note
  * that a metric must have at least one tag.
  */
 class TsdbMetric {
@@ -35,7 +35,7 @@ class TsdbMetric {
      * @param name
      *            tag identifier
      * @param value
-     *            tag value
+     *            tag valueRegex
      * @return the metric the tag was added to
      */
     public TsdbMetric addTag(String name, String value) {
@@ -63,7 +63,7 @@ class TsdbMetric {
      * @param timestamp
      *            when the measurement occurred
      * @param value
-     *            the measurement value
+     *            the measurement valueRegex
      * @return the metric
      */
     protected TsdbMetric innerAddDataPoint(long timestamp, Object value) {
@@ -77,7 +77,7 @@ class TsdbMetric {
      * Adds the data point to the metric with a timestamp of now.
      *
      * @param value
-     *            the measurement value
+     *            the measurement valueRegex
      * @return the metric
      */
     public TsdbMetric setDataPoint(long value) {
@@ -94,7 +94,7 @@ class TsdbMetric {
      * @param timestamp
      *            when the measurement occurred
      * @param value
-     *            the measurement value
+     *            the measurement valueRegex
      * @return the metric
      */
     public TsdbMetric setDataPoint(long timestamp, double value) {
@@ -105,7 +105,7 @@ class TsdbMetric {
      * Adds the data point to the metric with a timestamp of now.
      *
      * @param value
-     *            the measurement value
+     *            the measurement valueRegex
      * @return the metric
      */
     public TsdbMetric setDataPoint(double value) {

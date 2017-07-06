@@ -4,6 +4,7 @@ import Server.Tracer;
 import Server.TracerConf;
 import Utils.FileWatcher.FileActionCallback;
 import Utils.FileWatcher.WatchDir;
+import logAPI.*;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -11,7 +12,6 @@ import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -31,6 +31,7 @@ public class LogReaderManager {
     Thread checkingThread;
     Thread nodeManagerReadThread;
     ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
+    LogAPICollector apiCollector;
 
     public LogReaderManager() {
         conf = TracerConf.getInstance();
@@ -56,6 +57,13 @@ public class LogReaderManager {
         checkingRunnable = new CheckAppDirRunnable();
         nodeManagerReadThread = new Thread(nodeManagerReaderRunnable);
         checkingThread = new Thread(checkingRunnable);
+
+        apiCollector = LogAPICollector.getInstance();
+        registerDefaultAPI();
+        boolean customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled",   false);
+        if(customAPIEnabled) {
+            registerCustomAPI();
+        }
     }
 
     private class NodeManagerLogReaderRunnable implements Runnable {
@@ -185,6 +193,26 @@ public class LogReaderManager {
             String containerId = words[words.length - 6];
             System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
             recorder.putState(containerId, nextState, timestamp);
+        }
+    }
+
+    private void registerDefaultAPI() {
+        List<AbstractLogAPI> defaultAPIList = new ArrayList<>();
+        defaultAPIList.add(new SparkLogAPI());
+        defaultAPIList.add(new MapReduceLogAPI());
+
+        for(AbstractLogAPI api: defaultAPIList) {
+            apiCollector.register(api);
+        }
+    }
+
+    private void registerCustomAPI() {
+        String[] filePaths = conf.getStringOrDefault("tracer.log.custom-api.path", "../conf/custom.api").split(",");
+        for(String filePath: filePaths) {
+            File apiFile = new File(filePath);
+            if(apiFile.exists()) {
+                apiCollector.register(new CustomLogAPI(apiFile));
+            }
         }
     }
 }

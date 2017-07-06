@@ -1,7 +1,6 @@
 package log;
 
 import java.io.*;
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +20,7 @@ public class ContainerLogReader {
     volatile Boolean isChecking = true;
     String containerId;
     Thread checkingThread;
+    AppObjRecorder appObjRecorder = AppObjRecorder.getInstance();
 
     public int timeoutCount;
 
@@ -87,6 +87,7 @@ public class ContainerLogReader {
                     for(String message: messageBuffer) {
                         // TEST
                         // System.out.printf("%s\n", message);
+                        appObjRecorder.maybeUpdateInfo(containerId, message);
                         logSender.send(message);
                     }
                     Thread.sleep(200);

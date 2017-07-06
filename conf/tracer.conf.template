@@ -5,5 +5,7 @@ tracer.kafka.bootstrap.servers   localhost:9092
 
 tracer.log.app.root             /home/eddie/hadoop-2.7.3/logs/userlogs
 tracer.log.nodemanager.root     /home/eddie/hadoop-2.7.3/logs
+tracer.log.custom-api.enabled   false
+tracer.log.custom-api.path      ./custom.api
 
 tracer.tsdb.server              localhost:4242

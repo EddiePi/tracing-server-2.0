@@ -2,6 +2,7 @@ package docker;
 
 import Server.TracerConf;
 import Utils.ShellCommandExecutor;
+import log.AppObjRecorder;
 import log.ContainerStateRecorder;
 
 import java.io.BufferedReader;
@@ -19,7 +20,8 @@ class DockerMonitor {
     private String dockerId;
     private DockerMonitorManager manager;
     String containerId;
-    ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
+    ContainerStateRecorder stateRecorder = ContainerStateRecorder.getInstance();
+    AppObjRecorder objRecorder = AppObjRecorder.getInstance();
 
     // NOTE: type of dockerPid is String, NOT int
     String dockerPid = null;
@@ -159,6 +161,9 @@ class DockerMonitor {
         // get the container's state. e.g INIT, LOCALIZING ...
         getState(currentMetrics);
 
+        // get the app information in the container
+        getEvent(currentMetrics);
+
         // calculate the cpu rate
         calculateCurrentCpuRate(currentMetrics);
 
@@ -181,7 +186,14 @@ class DockerMonitor {
     }
 
     private void getState(DockerMetrics m) {
-        m.state = recorder.getState(m.containerId, m.timestamp, true);
+        m.state = stateRecorder.getState(m.containerId, m.timestamp, true);
+    }
+
+    private void getEvent(DockerMetrics m) {
+        List<String> temp = objRecorder.getInfo(m.containerId, m.timestamp);
+        if (temp != null) {
+            m.eventList.addAll(temp);
+        }
     }
 
     private boolean getCpuTime(DockerMetrics m) {

@@ -1,5 +1,8 @@
 package docker;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Eddie on 2017/2/23.
  */
@@ -11,6 +14,8 @@ public class DockerMetrics {
     public Long timestamp;
 
     public String state;
+
+    public List<String> eventList;
 
     // cpu usage
     public Long sysCpuTime = 0L;
@@ -37,5 +42,6 @@ public class DockerMetrics {
         timestamp = System.currentTimeMillis();
         this.dockerId = dockerId;
         this.containerId = containerId;
+        this.eventList = new ArrayList<>();
     }
 }

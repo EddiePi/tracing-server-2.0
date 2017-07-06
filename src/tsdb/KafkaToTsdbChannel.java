@@ -35,7 +35,7 @@ public class KafkaToTsdbChannel {
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put("valueRegex.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         consumer = new KafkaConsumer<>(props);
         kafkaTopics = Arrays.asList("trace", "log");
         consumer.subscribe(kafkaTopics);
@@ -114,33 +114,39 @@ public class KafkaToTsdbChannel {
             Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
             String containerState = metrics[8];
 
+            TsdbMetric newMetric;
             // cpu
-            builder.addMetric("cpu")
+            newMetric = builder.addMetric("cpu")
                     .setDataPoint(timestamp, cpuUsage)
                     .addTag("app", appId)
                     .addTag("container", containerId)
                     .addTag("state", containerState);
+            addAllObjInfo(metrics, newMetric);
 
             // memory
-            builder.addMetric("memory")
+            newMetric = builder.addMetric("memory")
                     .setDataPoint(timestamp, memoryUsage)
                     .addTag("app", appId)
                     .addTag("container", containerId)
                     .addTag("state", containerState);
+            addAllObjInfo(metrics, newMetric);
 
             // disk
-            builder.addMetric("disk")
+            newMetric = builder.addMetric("disk")
                     .setDataPoint(timestamp, diskRate)
                     .addTag("app", appId)
                     .addTag("container", containerId)
                     .addTag("state", containerState);
+            addAllObjInfo(metrics, newMetric);
 
             // network
-            builder.addMetric("network")
+            newMetric = builder.addMetric("network")
                     .setDataPoint(timestamp, netRate)
                     .addTag("app", appId)
                     .addTag("container", containerId)
                     .addTag("state", containerState);
+            addAllObjInfo(metrics, newMetric);
+
         } catch (NumberFormatException e) {
             e.printStackTrace();
             return false;
@@ -153,5 +159,15 @@ public class KafkaToTsdbChannel {
         String[] parts = containerId.split("_");
         String appId = "application_" + parts[parts.length - 4] + "_" + parts[parts.length - 3];
         return appId;
+    }
+
+    private void addAllObjInfo(String[] metrics, TsdbMetric tm) {
+        for(int i = 9; i < metrics.length; i++) {
+            String[] tagNValue = metrics[i].split(":");
+            if(tagNValue.length < 2) {
+                continue;
+            }
+            tm.addTag(tagNValue[0], tagNValue[1]);
+        }
     }
 }

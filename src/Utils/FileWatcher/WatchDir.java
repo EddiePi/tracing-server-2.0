@@ -92,7 +92,7 @@ public class WatchDir {
             for (WatchEvent<?> event : key.pollEvents()) {
                 WatchEvent.Kind kind = event.kind();
 
-                // event might be discard
+                // eventList might be discard
                 if (kind == StandardWatchEventKinds.OVERFLOW) {
                     continue;
                 }

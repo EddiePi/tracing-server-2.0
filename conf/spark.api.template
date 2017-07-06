@@ -1,0 +1,3 @@
+stage
+false
+.*Finished task.*in (stage\s[0-9]*\.[0-9]*) \(TID.*

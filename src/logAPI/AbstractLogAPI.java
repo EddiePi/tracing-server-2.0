@@ -1,8 +1,11 @@
 package logAPI;
 
+import Utils.FileReader;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by Eddie on 2017/7/1.
@@ -10,15 +13,28 @@ import java.util.Map;
 public abstract class AbstractLogAPI {
     List<MessageMark> messageMarkList;
 
+    File apiFile;
+
     public AbstractLogAPI() {
         messageMarkList = new ArrayList<>();
     }
 
-    public class MessageMark {
-        public String objName;
-        public String messageRegex;
-        // positive number means counting from left to right.
-        // negative number means counting from right to left.
-        public String[] offset;
+    void parseFile() throws IOException {
+        if(!apiFile.exists()) {
+            System.out.print("api file does not exist.\n");
+            return;
+        }
+        List<String> rules = FileReader.read(apiFile.getAbsolutePath());
+        for(int i = 0; i < rules.size(); i++) {
+            String line = rules.get(i);
+            while(line.matches("\\s+") || line.length() == 0) {
+                i++;
+            }
+            MessageMark mark = new MessageMark();
+            mark.name = rules.get(i++);
+            mark.isFinishMark = Boolean.parseBoolean(rules.get(i++));
+            mark.regex = rules.get(i++);
+            messageMarkList.add(mark);
+        }
     }
 }
