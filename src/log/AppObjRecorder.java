@@ -37,7 +37,7 @@ public class AppObjRecorder {
                 System.out.printf("app log message is matched: %s.\n", message);
                 if(matcher.groupCount() >= 1) {
 
-                    String value = matcher.group(1);
+                    String value = matcher.group(1).trim().replaceAll("\\s+", "_");
                     String[] words = message.split("\\s+");
                     Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
                     System.out.printf("going to update app value. name: %s, value: %s, isFinish: %b\n",
