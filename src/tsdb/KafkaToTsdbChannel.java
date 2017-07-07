@@ -66,7 +66,6 @@ public class KafkaToTsdbChannel {
                     if (hasMessage) {
                         try {
                             String message = builder.build(true);
-                            System.out.printf("tsdb json: %s\n", message);
 
                             // TODO: maintain the connection for performance
                             String response = HTTPRequest.sendPost(databaseURI, message);
