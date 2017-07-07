@@ -194,7 +194,7 @@ class DockerMonitor {
         if (temp != null) {
             m.eventList.addAll(temp);
             System.out.print("current app event: ");
-            for(String event: temp){
+            for(String event: m.eventList){
                 System.out.print(event + "\t");
             }
             System.out.print("\n");

@@ -52,9 +52,13 @@ public class KafkaMetricSender {
                 dm.netRecRate.toString() + "," +
                 dm.netTransRate.toString() + "," +
                 dm.state;
-        for(String objEvent: dm.eventList) {
-            res = res + "," + objEvent;
+        if (dm.eventList.size() > 0) {
+            for(String objEvent: dm.eventList) {
+                res = res + "," + objEvent;
+            }
+            System.out.printf("metricStr: %s\n", res);
         }
+
         return res;
     }
 

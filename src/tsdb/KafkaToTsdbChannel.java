@@ -8,9 +8,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
@@ -68,6 +66,7 @@ public class KafkaToTsdbChannel {
                     if (hasMessage) {
                         try {
                             String message = builder.build(true);
+                            System.out.printf("tsdb json: %s\n", message);
 
                             // TODO: maintain the connection for performance
                             String response = HTTPRequest.sendPost(databaseURI, message);
@@ -105,47 +104,31 @@ public class KafkaToTsdbChannel {
         }
         System.out.printf("metricStr: %s\n", metricStr);
         try {
-            String containerId = metrics[0];
-            String appId = containerIdToAppId(containerId);
             Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
             Double cpuUsage = Double.valueOf(metrics[2]);
             Long memoryUsage = Long.valueOf(metrics[3]);
             Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
             Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
-            String containerState = metrics[8];
-
-            TsdbMetric newMetric;
+            Map<String, String> tagMap = buildAllTags(metrics);
             // cpu
-            newMetric = builder.addMetric("cpu")
+            builder.addMetric("cpu")
                     .setDataPoint(timestamp, cpuUsage)
-                    .addTag("app", appId)
-                    .addTag("container", containerId)
-                    .addTag("state", containerState);
-            addAllObjInfo(metrics, newMetric);
+                    .addTags(tagMap);
 
             // memory
-            newMetric = builder.addMetric("memory")
+            builder.addMetric("memory")
                     .setDataPoint(timestamp, memoryUsage)
-                    .addTag("app", appId)
-                    .addTag("container", containerId)
-                    .addTag("state", containerState);
-            addAllObjInfo(metrics, newMetric);
+                    .addTags(tagMap);
 
             // disk
-            newMetric = builder.addMetric("disk")
+            builder.addMetric("disk")
                     .setDataPoint(timestamp, diskRate)
-                    .addTag("app", appId)
-                    .addTag("container", containerId)
-                    .addTag("state", containerState);
-            addAllObjInfo(metrics, newMetric);
+                    .addTags(tagMap);
 
             // network
-            newMetric = builder.addMetric("network")
+            builder.addMetric("network")
                     .setDataPoint(timestamp, netRate)
-                    .addTag("app", appId)
-                    .addTag("container", containerId)
-                    .addTag("state", containerState);
-            addAllObjInfo(metrics, newMetric);
+                    .addTags(tagMap);
 
         } catch (NumberFormatException e) {
             e.printStackTrace();
@@ -161,14 +144,23 @@ public class KafkaToTsdbChannel {
         return appId;
     }
 
-    private void addAllObjInfo(String[] metrics, TsdbMetric tm) {
-        for(int i = 9; i < metrics.length; i++) {
-            String[] tagNValue = metrics[i].split(":");
-            if(tagNValue.length < 2) {
-                continue;
+    private Map<String, String> buildAllTags(String[] metrics) {
+        String containerId = metrics[0];
+        String appId = containerIdToAppId(containerId);
+        String containerState = metrics[8];
+        Map<String, String> tagMap = new HashMap<>();
+        tagMap.put("app", appId);
+        tagMap.put("container", containerId);
+        tagMap.put("stage", containerState);
+        if(metrics.length > 9) {
+            for(int i = 9; i < metrics.length; i++) {
+                String[] tagNValue = metrics[i].split(":");
+                if(tagNValue.length < 2) {
+                    continue;
+                }
+                tagMap.put(tagNValue[0], tagNValue[1]);
             }
-            System.out.printf("adding obj info: %s:%s\n", tagNValue[0], tagNValue[1]);
-            tm.addTag(tagNValue[0], tagNValue[1]);
         }
+        return tagMap;
     }
 }

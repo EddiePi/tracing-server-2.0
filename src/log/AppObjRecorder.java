@@ -4,10 +4,7 @@ import logAPI.LogAPICollector;
 import logAPI.MessageMark;
 
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
@@ -43,7 +40,7 @@ public class AppObjRecorder {
                     String value = matcher.group(1);
                     String[] words = message.split("\\s+");
                     Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
-                    System.out.printf("going to update app info. name: %s, value: %s, isFinish: %b\n",
+                    System.out.printf("going to update app value. name: %s, value: %s, isFinish: %b\n",
                             mark.name, value, mark.isFinishMark);
                     updateInfo(containerId, mark.name, value, timestamp, mark.isFinishMark);
                 }
@@ -52,17 +49,28 @@ public class AppObjRecorder {
     }
 
     public void updateInfo(String containerId, String name, String value, Long timestamp, boolean isFinish) {
-        Map<String, ObjInfoWithTimestamp> objInfoWithTimestampMap =
+        Map<String, ObjInfoWithTimestamp> nameToInfoMap =
                 timestampInfoMap.getOrDefault(containerId, null);
         if(isFinish) {
-            objInfoWithTimestampMap.remove(name);
+            nameToInfoMap.remove(name);
         } else {
-            if (objInfoWithTimestampMap== null) {
-                objInfoWithTimestampMap = new HashMap<>();
-                timestampInfoMap.put(containerId, objInfoWithTimestampMap);
+            if (nameToInfoMap== null) {
+                nameToInfoMap = new HashMap<>();
+                timestampInfoMap.put(containerId, nameToInfoMap);
             }
+            ObjInfoWithTimestamp existingInfo = nameToInfoMap.get(name);
+            if(existingInfo != null) {
+                if(existingInfo.value.equals(value)) {
+                } else {
+                    System.out.printf("update existing info: %s\n", name);
+                    existingInfo.value = value;
+                    existingInfo.timestamp = timestamp;
+                }
+                return;
+            }
+            System.out.printf("add new info: %s\n", name);
             ObjInfoWithTimestamp objInfoWithTimestamp = new ObjInfoWithTimestamp(name, value, timestamp);
-            objInfoWithTimestampMap.put(name, objInfoWithTimestamp);
+            nameToInfoMap.put(name, objInfoWithTimestamp);
         }
     }
 
@@ -76,9 +84,8 @@ public class AppObjRecorder {
         res = new ArrayList<>();
         for(Map.Entry<String, ObjInfoWithTimestamp> entry: objInfoWithTimestampMap.entrySet()) {
             ObjInfoWithTimestamp value = entry.getValue();
-            if(value.timestamp <= timestamp) {
-                res.add(value.name + ":" + value.info);
-            }
+            res.add(value.name + ":" + value.value);
+
         }
         return res;
     }
@@ -87,12 +94,12 @@ public class AppObjRecorder {
     private class ObjInfoWithTimestamp {
         Long timestamp;
         String name;
-        String info;
+        String value;
 
-        public ObjInfoWithTimestamp(String name, String info, Long timestamp) {
+        public ObjInfoWithTimestamp(String name, String value, Long timestamp) {
             this.timestamp = timestamp;
             this.name = name;
-            this.info = info;
+            this.value = value;
         }
     }
 }
