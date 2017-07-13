@@ -150,7 +150,7 @@ public class KafkaToTsdbChannel {
         Map<String, String> tagMap = new HashMap<>();
         tagMap.put("app", appId);
         tagMap.put("container", containerId);
-        tagMap.put("stage", containerState);
+        tagMap.put("state", containerState);
         if(metrics.length > 9) {
             for(int i = 9; i < metrics.length; i++) {
                 String[] tagNValue = metrics[i].split(":");
