@@ -32,6 +32,7 @@ public class LogReaderManager {
     Thread nodeManagerReadThread;
     ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
     LogAPICollector apiCollector;
+    boolean customAPIEnabled;
 
     public LogReaderManager() {
         conf = TracerConf.getInstance();
@@ -60,7 +61,7 @@ public class LogReaderManager {
 
         apiCollector = LogAPICollector.getInstance();
         registerDefaultAPI();
-        boolean customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled",   false);
+        customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled",   false);
         if(customAPIEnabled) {
             registerCustomAPI();
         }
@@ -137,6 +138,15 @@ public class LogReaderManager {
                         // The file name is also the containerId.
                         String name = file.getName();
                         if(name.contains("container")) {
+
+                            // we only update the api if there is no running app.
+                            if(runningContainerMap.size() == 0) {
+                                apiCollector.clearAllAPI();
+                                registerDefaultAPI();
+                                if (customAPIEnabled) {
+                                    registerCustomAPI();
+                                }
+                            }
                             runningContainerMap.put(name, new ContainerLogReader(file.getAbsolutePath()));
                         }
                     }
@@ -196,6 +206,9 @@ public class LogReaderManager {
         }
     }
 
+
+    // we need to re-register the API after detecting new apps.
+    // In this design, we don't have to restart the tracing server to import changed api file
     private void registerDefaultAPI() {
         List<AbstractLogAPI> defaultAPIList = new ArrayList<>();
         defaultAPIList.add(new SparkLogAPI());

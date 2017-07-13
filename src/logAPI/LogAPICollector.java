@@ -25,4 +25,8 @@ public class LogAPICollector {
         return allRuleMarkList;
     }
 
+    public void clearAllAPI() {
+        allRuleMarkList.clear();
+    }
+
 }
