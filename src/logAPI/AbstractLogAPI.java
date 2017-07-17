@@ -24,17 +24,19 @@ public abstract class AbstractLogAPI {
             System.out.print("api file does not exist.\n");
             return;
         }
-        List<String> rules = FileReader.read(apiFile.getAbsolutePath());
-        for(int i = 0; i < rules.size(); i++) {
-            String line = rules.get(i);
-            while(line.matches("\\s+") || line.length() == 0) {
-                i++;
-            }
-            MessageMark mark = new MessageMark();
-            mark.name = rules.get(i++);
-            mark.isFinishMark = Boolean.parseBoolean(rules.get(i++));
-            mark.regex = rules.get(i++);
-            messageMarkList.add(mark);
-        }
+        messageMarkList = XMLParser.parse(apiFile.getCanonicalPath());
+//        List<String> rules = FileReader.read(apiFile.getAbsolutePath());
+//        for(int i = 0; i < rules.size(); i++) {
+//            String line = rules.get(i);
+//            while(line.matches("\\s+") || line.length() == 0) {
+//                i++;
+//            }
+//            MessageMark mark = new MessageMark();
+//            mark.name = rules.get(i++);
+//            mark.isFinishMark = Boolean.parseBoolean(rules.get(i++));
+//            mark.regex = rules.get(i++);
+//            messageMarkList.add(mark);
+//        }
+
     }
 }

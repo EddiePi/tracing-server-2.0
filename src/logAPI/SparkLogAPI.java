@@ -11,7 +11,7 @@ import java.io.IOException;
 public class SparkLogAPI extends AbstractLogAPI {
     TracerConf conf = TracerConf.getInstance();
     //public for test
-    public String filePath = conf.getStringOrDefault("tracer.log.spark-api.path", "../conf/spark.api");
+    public String filePath = conf.getStringOrDefault("tracer.log.spark-api.path", "../conf/spark-api.xml");
 
     public SparkLogAPI() {
         super();

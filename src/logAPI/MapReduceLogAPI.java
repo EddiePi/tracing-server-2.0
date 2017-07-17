@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 public class MapReduceLogAPI extends AbstractLogAPI {
     TracerConf conf = TracerConf.getInstance();
-    String filePath = conf.getStringOrDefault("tracer.log.mr-api.path", "../conf/mr.api");
+    String filePath = conf.getStringOrDefault("tracer.log.mr-api.path", "../conf/mr-api.xml");
 
     public MapReduceLogAPI() {
         super();

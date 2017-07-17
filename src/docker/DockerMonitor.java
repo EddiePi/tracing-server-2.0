@@ -213,7 +213,7 @@ class DockerMonitor {
         String dockerUrl = cpuPath + "cpuacct.usage";
         String sysUrl = "/proc/stat";
 
-        // read the docker's cpu time
+        // parse the docker's cpu time
         List<String> readLines = readFileLines(dockerUrl);
         if(readLines != null) {
             String dockerCpuTimeStr = readLines.get(0);
@@ -274,9 +274,9 @@ class DockerMonitor {
         //System.out.print("deltaTime: " + deltaTime + " deltaRead: " + deltaRead + " deltaWrite: " + deltaWrite + "\n");
     }
 
-    // read the disk usages from cgroup files
+    // parse the disk usages from cgroup files
     // and update the taskMetrics in the monitor.
-    // if it is not running or first read, return false.
+    // if it is not running or first parse, return false.
     private boolean getDiskServicedBytes(DockerMetrics m) {
         if(!isRunning) {
             return false;
@@ -329,7 +329,7 @@ class DockerMonitor {
         //System.out.print("deltaTime: " + deltaTime + " deltaRec: " + deltaReceive + " deltaTrans: " + deltaTransmit + "\n");
     }
 
-    // read the network usage from 'proc' files
+    // parse the network usage from 'proc' files
     // and update the taskMetrics in the monitor.
     private boolean getNetServicedBytes(DockerMetrics m) {
         if (!isRunning) {
@@ -373,7 +373,7 @@ class DockerMonitor {
             }
             reader.close();
         } catch (IOException e) {
-            //if we come to here, then means read file causes errors;
+            //if we come to here, then means parse file causes errors;
             //if reports this errors mission errors, it means this containers
             //has terminated, but nodemanager did not delete it yet. we stop monitoring
             //here
@@ -413,7 +413,7 @@ class DockerMonitor {
         System.out.printf("docker pid: %s\n" +
                 "cpu rate: %s\n" +
                 "memory usage in kb: %d\n" +
-                "total read: %d total write: %d read rate: %s write rate: %s\n" +
+                "total parse: %d total write: %d parse rate: %s write rate: %s\n" +
                 "total receive: %d total transmit: %d receive rate: %s transmit rate: %s\n",
                 dockerPid,
                 currentMetrics.cpuRate,

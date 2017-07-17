@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 public class FileReaderTest {
     @Test
     public void read() throws Exception {
-        FileReader.read("conf/spark.api.template");
+        FileReader.read("conf/spark-api.xml.template");
     }
 
 }

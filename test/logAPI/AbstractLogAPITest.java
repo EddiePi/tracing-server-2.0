@@ -14,7 +14,7 @@ public class AbstractLogAPITest {
     AbstractLogAPI api = new SparkLogAPI();
     @Before
     public void setUp() throws Exception {
-        api.apiFile = new File("conf/spark.api.template");
+        api.apiFile = new File("conf/spark-api.xml.template");
     }
 
     @Test
