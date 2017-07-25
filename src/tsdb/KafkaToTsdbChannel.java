@@ -39,7 +39,7 @@ public class KafkaToTsdbChannel {
         props.put("group.id", "trace");
         props.put("enable.auto.commit", "true");
         props.put("auto.commit.interval.ms", "1000");
-        props.put("name.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         consumer = new KafkaConsumer<>(props);
         kafkaTopics = Arrays.asList("trace");
