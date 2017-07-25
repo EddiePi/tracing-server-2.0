@@ -20,8 +20,6 @@ class DockerMonitor {
     private String dockerId;
     private DockerMonitorManager manager;
     String containerId;
-    ContainerStateRecorder stateRecorder = ContainerStateRecorder.getInstance();
-    AppObjRecorder objRecorder = AppObjRecorder.getInstance();
 
     // NOTE: type of dockerPid is String, NOT int
     String dockerPid = null;
@@ -191,6 +189,7 @@ class DockerMonitor {
      */
     @Deprecated
     private void getState(DockerMetrics m) {
+        ContainerStateRecorder stateRecorder = ContainerStateRecorder.getInstance();
         m.state = stateRecorder.getState(m.containerId, m.timestamp, true);
     }
 
@@ -202,6 +201,7 @@ class DockerMonitor {
      */
     @Deprecated
     private void getEvent(DockerMetrics m) {
+        AppObjRecorder objRecorder = AppObjRecorder.getInstance();
         List<String> temp = objRecorder.getInfo(m.containerId, m.timestamp);
         if (temp != null) {
             if (m.eventList == null) {

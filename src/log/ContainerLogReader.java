@@ -26,7 +26,6 @@ public class ContainerLogReader {
     volatile Boolean isChecking = true;
     String containerId;
     Thread checkingThread;
-    AppObjRecorder appObjRecorder = AppObjRecorder.getInstance();
     LogAPICollector collector = LogAPICollector.getInstance();
 
     public int timeoutCount;
@@ -94,7 +93,6 @@ public class ContainerLogReader {
                     for(String message: messageBuffer) {
                         // TEST
                         // System.out.printf("%s\n", message);
-                        appObjRecorder.maybeUpdateInfo(containerId, message);
                         logSender.send(containerId + " " + message);
                     }
                     Thread.sleep(200);

@@ -98,8 +98,6 @@ public class LogReaderManager {
                     }
                     while ((line = bufferedReader.readLine()) != null) {
 
-                        // record the container state. metric uses this information.
-                        recordContainerState(line);
                         messageBuffer.add(line);
                     }
                     for (String message : messageBuffer) {
@@ -185,6 +183,11 @@ public class LogReaderManager {
         }
     }
 
+    /**
+     * @deprecated this method is deprecated. we should do this function on master node
+     * @param logStr
+     */
+    @Deprecated
     private void recordContainerState(String logStr) {
         if(logStr.matches(".*Start request for container.*")) {
 
