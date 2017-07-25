@@ -1,10 +1,16 @@
 package log;
 
+import logAPI.LogAPICollector;
+import logAPI.MessageMark;
+import tsdb.PackedMessage;
+
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by Eddie on 2017/6/6.
@@ -21,6 +27,7 @@ public class ContainerLogReader {
     String containerId;
     Thread checkingThread;
     AppObjRecorder appObjRecorder = AppObjRecorder.getInstance();
+    LogAPICollector collector = LogAPICollector.getInstance();
 
     public int timeoutCount;
 
@@ -88,7 +95,7 @@ public class ContainerLogReader {
                         // TEST
                         // System.out.printf("%s\n", message);
                         appObjRecorder.maybeUpdateInfo(containerId, message);
-                        logSender.send(message);
+                        logSender.send(containerId + " " + message);
                     }
                     Thread.sleep(200);
                 }
@@ -118,6 +125,8 @@ public class ContainerLogReader {
         String[] paths = containerPath.split("/");
         return paths[paths.length - 1];
     }
+
+
 
     /**
      * This method will stop all the log readers in this container directory

@@ -7,7 +7,7 @@ import java.util.List;
  * Created by Eddie on 2017/7/3.
  */
 public class LogAPICollector {
-    List<MessageMark> allRuleMarkList = new ArrayList<>();
+    public List<MessageMark> allRuleMarkList = new ArrayList<>();
 
     private LogAPICollector(){}
 
@@ -19,10 +19,6 @@ public class LogAPICollector {
 
     public void register(AbstractLogAPI api) {
         allRuleMarkList.addAll(api.messageMarkList);
-    }
-
-    public List<MessageMark> getAllRuleMarks() {
-        return allRuleMarkList;
     }
 
     public void clearAllAPI() {

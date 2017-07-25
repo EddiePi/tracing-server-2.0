@@ -150,7 +150,7 @@ class DockerMonitor {
 
     private void sendZeroMetrics() {
         DockerMetrics zeroMetrics = new DockerMetrics(null, containerId);
-        getState(zeroMetrics);
+        // getState(zeroMetrics);
         metricSender.send(zeroMetrics);
     }
 
@@ -159,10 +159,10 @@ class DockerMonitor {
         currentMetrics = new DockerMetrics(dockerId, containerId);
 
         // get the container's state. e.g INIT, LOCALIZING ...
-        getState(currentMetrics);
+        // getState(currentMetrics);
 
         // get the app information in the container
-        getEvent(currentMetrics);
+        // getEvent(currentMetrics);
 
         // calculate the cpu rate
         calculateCurrentCpuRate(currentMetrics);
@@ -185,13 +185,28 @@ class DockerMonitor {
         // printStatus();
     }
 
+    /**
+     * @deprecated we no longer record state info with metric.
+     * @param m
+     */
+    @Deprecated
     private void getState(DockerMetrics m) {
         m.state = stateRecorder.getState(m.containerId, m.timestamp, true);
     }
 
+    /**
+     *
+     * @deprecated we do not record container state in metric info anymore.
+     * Instead, we record it in log file
+     * @param m
+     */
+    @Deprecated
     private void getEvent(DockerMetrics m) {
         List<String> temp = objRecorder.getInfo(m.containerId, m.timestamp);
         if (temp != null) {
+            if (m.eventList == null) {
+                m.eventList = new ArrayList<>();
+            }
             m.eventList.addAll(temp);
             System.out.print("current app event: ");
             for(String event: m.eventList){

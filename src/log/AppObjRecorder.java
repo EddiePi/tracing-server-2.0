@@ -20,7 +20,7 @@ public class AppObjRecorder {
 
     private AppObjRecorder(){
         LogAPICollector collector = LogAPICollector.getInstance();
-        allMarks = collector.getAllRuleMarks();
+        allMarks = collector.allRuleMarkList;
     }
 
     public static AppObjRecorder getInstance() {
@@ -36,13 +36,14 @@ public class AppObjRecorder {
             if(matcher.matches()) {
                 System.out.printf("app log message is matched: %s.\n", message);
                 if(matcher.groupCount() >= 1) {
-
-                    String value = matcher.group(1).trim().replaceAll("\\s+", "_");
-                    String[] words = message.split("\\s+");
-                    Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
-                    System.out.printf("going to update app value. name: %s, value: %s, isFinish: %b\n",
-                            mark.name, value, mark.isFinishMark);
-                    updateInfo(containerId, mark.name, value, timestamp, mark.isFinishMark);
+                    for(MessageMark.Group group: mark.groups) {
+                        String value = matcher.group(group.name).trim().replaceAll("\\s+", "_");
+                        String[] words = message.split("\\s+");
+                        Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
+                        System.out.printf("going to update app value. name: %s, value: %s, isFinish: %b\n",
+                                group.name, value, group.isFinish);
+                        updateInfo(containerId, group.name, value, timestamp, group.isFinish);
+                    }
                 }
             }
         }

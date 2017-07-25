@@ -16,7 +16,7 @@ public class KafkaLogSender {
     TracerConf conf;
     String kafkaTopic;
 
-    // The key is either containerId-log or 'nodemanager-log'.
+    // The name is either containerId-log or 'nodemanager-log'.
     String key;
 
     public KafkaLogSender(String key) {
@@ -24,7 +24,7 @@ public class KafkaLogSender {
         props = new Properties();
         props.put("acks", "0");
         props.put("buffer.memory", 33554432);
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("name.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         String servers = conf.getStringOrDefault("tracer.kafka.bootstrap.servers", "localhost:9092");
         props.put("bootstrap.servers", servers);

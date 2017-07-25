@@ -15,6 +15,10 @@ public class DockerMetrics {
 
     public String state;
 
+    /**
+     * @deprecated we no longer record log event with metrics
+     */
+    @Deprecated
     public List<String> eventList;
 
     // cpu usage
@@ -42,6 +46,6 @@ public class DockerMetrics {
         timestamp = System.currentTimeMillis();
         this.dockerId = dockerId;
         this.containerId = containerId;
-        this.eventList = new ArrayList<>();
+        //this.eventList = new ArrayList<>();
     }
 }

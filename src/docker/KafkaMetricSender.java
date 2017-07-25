@@ -24,7 +24,7 @@ public class KafkaMetricSender {
         props = new Properties();
         props.put("acks", "0");
         props.put("buffer.memory", 33554432);
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("name.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         String servers = conf.getStringOrDefault("tracer.kafka.bootstrap.servers", "localhost:9092");
         props.put("bootstrap.servers", servers);
@@ -50,15 +50,13 @@ public class KafkaMetricSender {
                 dm.diskReadRate.toString() + "," +
                 dm.diskWriteRate.toString() + "," +
                 dm.netRecRate.toString() + "," +
-                dm.netTransRate.toString() + "," +
-                dm.state;
-        if (dm.eventList.size() > 0) {
-            for(String objEvent: dm.eventList) {
-                res = res + "," + objEvent;
-            }
-            System.out.printf("metricStr: %s\n", res);
-        }
-
+                dm.netTransRate.toString();
+//        if (dm.eventList.size() > 0) {
+//            for(String objEvent: dm.eventList) {
+//                res = res + "," + objEvent;
+//            }
+//            System.out.printf("metricStr: %s\n", res);
+//        }
         return res;
     }
 

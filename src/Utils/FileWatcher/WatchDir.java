@@ -85,7 +85,7 @@ public class WatchDir {
             }
             Path dir = keys.get(key);
             if (dir == null) {
-                System.err.println("unrecognized operation");
+                System.err.println("unrecognized calculate");
                 continue;
             }
 

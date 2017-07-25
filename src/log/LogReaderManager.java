@@ -60,10 +60,12 @@ public class LogReaderManager {
         checkingThread = new Thread(checkingRunnable);
 
         apiCollector = LogAPICollector.getInstance();
-        registerDefaultAPI();
-        customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled",   false);
-        if(customAPIEnabled) {
-            registerCustomAPI();
+        if (conf.getBooleanOrDefault("tracer.is-master", false)) {
+            registerDefaultAPI();
+            customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled", false);
+            if (customAPIEnabled) {
+                registerCustomAPI();
+            }
         }
     }
 
@@ -188,7 +190,7 @@ public class LogReaderManager {
 
             // here we notify the docker monitor to start.
             String[] words = logStr.split("\\s+");
-            Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
+            Long timestamp = parseTimestamp(logStr);
             String firstState = "NEW";
             String containerId = words[words.length - 4];
             System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, firstState);
@@ -197,8 +199,8 @@ public class LogReaderManager {
             // start docker monitor
             tracer.addContainerMonitor(containerId);
         } else if(logStr.matches(".*Container.*transitioned from.*")) {
+            Long timestamp = parseTimestamp(logStr);
             String[] words = logStr.split("\\s+");
-            Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
             String nextState = words[words.length - 1];
             String containerId = words[words.length - 6];
             System.out.printf("filtered message: %s\ncontainerId: %s, state: %s\n", logStr, containerId, nextState);
@@ -227,5 +229,11 @@ public class LogReaderManager {
                 apiCollector.register(new CustomLogAPI(apiFile));
             }
         }
+    }
+
+    public static Long parseTimestamp(String logMessage) {
+        String[] words = logMessage.split("\\s+");
+        Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
+        return timestamp;
     }
 }
