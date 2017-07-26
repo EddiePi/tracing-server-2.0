@@ -43,11 +43,8 @@
             <value>1</value>
         </group>
         <group>
-            <name>byte.transfered</name>
+            <name>byte.transferred</name>
             <type>event</type>
-            <tags>
-                <tag>byte</tag>
-            </tags>
             <isFinish>true</isFinish>
             <value>byte</value>
         </group>

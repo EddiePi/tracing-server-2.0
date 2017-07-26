@@ -27,8 +27,8 @@ public class ContainerLogReaderTest {
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         Date nowDate = new Date();
         String now = format.format(nowDate);
-        testLog.add(now + " Running task 1.0 in stage 1.0 (TID 12)");
-        testLog.add(now + " Finished task 1.0 in stage 1.0 (TID 12). 123 bytes are sent to driver.");
+        testLog.add("2017-07-25 23:57:16.357 INFO Executor: Running task 126.0 in stage 0.0 (TID 123)");
+        testLog.add("2017-07-25 23:57:16.352 INFO Executor: Finished task 69.0 in stage 0.0 (TID 68). 1665 bytes result sent to driver");
     }
 
     @Test

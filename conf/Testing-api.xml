@@ -45,9 +45,6 @@
         <group>
             <name>byte.transfered</name>
             <type>event</type>
-            <tags>
-                <tag>byte</tag>
-            </tags>
             <isFinish>true</isFinish>
             <value>byte</value>
         </group>
