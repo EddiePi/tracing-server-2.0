@@ -69,10 +69,8 @@ public class KafkaToTsdbChannel {
                     boolean hasMessage = false;
                     if (key.matches("container.*-metric")) {
                         hasMessage = metricTransformer(value);
-                        System.out.printf("read metric: %s\n", value);
                     } else if (key.matches("container.*-log")) {
                         hasMessage = logTransformer(value);
-                        System.out.printf("read log: %s\n", value);
                     }
                     if (hasMessage) {
                         try {
@@ -109,7 +107,7 @@ public class KafkaToTsdbChannel {
 
     private boolean metricTransformer(String metricStr) {
         String[] metrics = metricStr.split(",");
-        if(metrics.length < 9) {
+        if(metrics.length < 8) {
             return false;
         }
         System.out.printf("metricStr: %s\n", metricStr);
@@ -169,6 +167,7 @@ public class KafkaToTsdbChannel {
         int separatorIndex = kafkaMessage.indexOf(' ');
         String containerId = kafkaMessage.substring(separatorIndex).trim();
         String logMessage = kafkaMessage.substring(0, separatorIndex).trim();
+        System.out.printf("containerId: %s, message: %s\n", containerId, logMessage);
         List<PackedMessage> packedMessagesList = new ArrayList<>();
         for(MessageMark messageMark: collector.allRuleMarkList) {
             Pattern pattern = Pattern.compile(messageMark.regex);
