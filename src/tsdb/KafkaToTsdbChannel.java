@@ -69,7 +69,7 @@ public class KafkaToTsdbChannel {
                     boolean hasMessage = false;
                     if (key.matches("container.*-metric")) {
                         hasMessage = metricTransformer(value);
-                    } else if (key.matches("container.*-log")) {
+                    } else if (key.matches(".*-log")) {
                         hasMessage = logTransformer(value);
                     }
                     if (hasMessage) {
@@ -149,6 +149,9 @@ public class KafkaToTsdbChannel {
     private boolean logTransformer(String kafkaMessage) {
         List<PackedMessage> packedMessageList;
         packedMessageList = maybePackMessage(kafkaMessage);
+        if(packedMessageList == null) {
+            return false;
+        }
         if(packedMessageList.size() == 0) {
             return false;
         }
@@ -166,7 +169,10 @@ public class KafkaToTsdbChannel {
     private List<PackedMessage> maybePackMessage(String kafkaMessage) {
         int separatorIndex = kafkaMessage.indexOf(' ');
         String logMessage = kafkaMessage.substring(separatorIndex).trim();
-        String containerId = kafkaMessage.substring(0, separatorIndex).trim();
+        String componentId = kafkaMessage.substring(0, separatorIndex).trim();
+        if (!componentId.matches("(container.*)|(nodemanager)")) {
+            return null;
+        }
         List<PackedMessage> packedMessagesList = new ArrayList<>();
         for(MessageMark messageMark: collector.allRuleMarkList) {
             Pattern pattern = Pattern.compile(messageMark.regex);
@@ -186,11 +192,11 @@ public class KafkaToTsdbChannel {
                         }
                         Map<String, String> tagMap = new HashMap<>();
                         for(String tagName: group.tags) {
-                            String tagValue = matcher.group(tagName);
+                            String tagValue = matcher.group(tagName).replace(' ', '_');
                             tagMap.put(tagName, tagValue);
                         }
                         PackedMessage packedMessage =
-                                new PackedMessage(containerId, timestamp, name, tagMap, value);
+                                new PackedMessage(componentId, timestamp, name, tagMap, value);
                         packedMessagesList.add(packedMessage);
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
