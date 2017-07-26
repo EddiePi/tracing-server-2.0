@@ -138,6 +138,7 @@ public class LogReaderManager {
                         // The file name is also the containerId.
                         String name = file.getName();
                         if(name.contains("container")) {
+                            tracer.addContainerMonitor(name);
 
                             // we only update the api if there is no running app.
                             if(runningContainerMap.size() == 0) {
@@ -200,7 +201,6 @@ public class LogReaderManager {
             recorder.putState(containerId, firstState, timestamp);
 
             // start docker monitor
-            tracer.addContainerMonitor(containerId);
         } else if(logStr.matches(".*Container.*transitioned from.*")) {
             Long timestamp = parseTimestamp(logStr);
             String[] words = logStr.split("\\s+");

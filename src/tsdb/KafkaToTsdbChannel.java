@@ -42,7 +42,7 @@ public class KafkaToTsdbChannel {
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         consumer = new KafkaConsumer<>(props);
-        kafkaTopics = Arrays.asList("trace");
+        kafkaTopics = Arrays.asList("trace", "log");
         consumer.subscribe(kafkaTopics);
         databaseURI = conf.getStringOrDefault("tracer.tasb.server", "localhost:4242");
         if(!databaseURI.matches("http://.*")) {
