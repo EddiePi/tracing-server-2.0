@@ -165,14 +165,14 @@ public class KafkaToTsdbChannel {
 
     private List<PackedMessage> maybePackMessage(String kafkaMessage) {
         int separatorIndex = kafkaMessage.indexOf(' ');
-        String containerId = kafkaMessage.substring(separatorIndex).trim();
-        String logMessage = kafkaMessage.substring(0, separatorIndex).trim();
-        System.out.printf("containerId: %s, message: %s\n", containerId, logMessage);
+        String logMessage = kafkaMessage.substring(separatorIndex).trim();
+        String containerId = kafkaMessage.substring(0, separatorIndex).trim();
         List<PackedMessage> packedMessagesList = new ArrayList<>();
         for(MessageMark messageMark: collector.allRuleMarkList) {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
+                System.out.printf("matched log: %s\n", logMessage);
                 for(MessageMark.Group group: messageMark.groups) {
                     try {
                         String name = group.name;
