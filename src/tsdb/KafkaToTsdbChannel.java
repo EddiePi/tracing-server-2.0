@@ -69,8 +69,10 @@ public class KafkaToTsdbChannel {
                     boolean hasMessage = false;
                     if (key.matches("container.*-metric")) {
                         hasMessage = metricTransformer(value);
+                        System.out.printf("read metric: %s\n", value);
                     } else if (key.matches("container.*-log")) {
                         hasMessage = logTransformer(value);
+                        System.out.printf("read log: %s\n", value);
                     }
                     if (hasMessage) {
                         try {

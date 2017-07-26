@@ -139,15 +139,6 @@ public class LogReaderManager {
                         String name = file.getName();
                         if(name.contains("container")) {
                             tracer.addContainerMonitor(name);
-
-                            // we only update the api if there is no running app.
-                            if(runningContainerMap.size() == 0) {
-                                apiCollector.clearAllAPI();
-                                registerDefaultAPI();
-                                if (customAPIEnabled) {
-                                    registerCustomAPI();
-                                }
-                            }
                             runningContainerMap.put(name, new ContainerLogReader(file.getAbsolutePath()));
                         }
                     }
