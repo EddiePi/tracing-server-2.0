@@ -63,37 +63,34 @@ public class KafkaToTsdbChannel {
         public void run() {
             while (isRunning) {
                 ConsumerRecords<String, String> records = consumer.poll(100);
+                boolean hasMessage = false;
                 for (ConsumerRecord<String, String> record : records) {
                     String key = record.key();
                     String value = record.value();
-                    boolean hasMessage = false;
                     if (key.matches("container.*-metric")) {
-                        hasMessage = metricTransformer(value);
+                        hasMessage = hasMessage | metricTransformer(value);
                     } else if (key.matches(".*-log")) {
-                        hasMessage = logTransformer(value);
+                        hasMessage = hasMessage | logTransformer(value);
                     }
-                    if (hasMessage) {
-                        try {
-                            String message = builder.build(true);
+                }
+                if (hasMessage) {
+                    try {
+                        String message = builder.build(true);
 
-                            // TODO: maintain the connection for performance
-                            String response = HTTPRequest.sendPost(databaseURI, message);
-                            if(!response.matches("\\s*")) {
-                                System.out.printf("Unexpected response: %s\n" , response);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        // TODO: maintain the connection for performance
+                        String response = HTTPRequest.sendPost(databaseURI, message);
+                        if (!response.matches("\\s*")) {
+                            System.out.printf("Unexpected response: %s\n", response);
                         }
-
+                        Thread.sleep(10);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                consumer.close(5, TimeUnit.SECONDS);
             }
-            consumer.close(5, TimeUnit.SECONDS);
         }
     }
 
