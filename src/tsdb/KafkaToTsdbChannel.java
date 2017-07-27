@@ -188,7 +188,8 @@ public class KafkaToTsdbChannel {
                         if (valueStr.matches("^[-+]?[\\d]*(\\.\\d*)?$")) {
                             value = Double.valueOf(valueStr);
                         } else {
-                            value = Double.valueOf(matcher.group(valueStr));
+                            String valueWithUnit = matcher.group(valueStr);
+                            value = parseDoubleStrWithUnit(valueWithUnit);
                         }
                         Map<String, String> tagMap = new HashMap<>();
                         for(String tagName: group.tags) {
@@ -231,5 +232,29 @@ public class KafkaToTsdbChannel {
             }
         }
         return tagMap;
+    }
+
+    private Double parseDoubleStrWithUnit(String doubleStr) {
+        String tmp = doubleStr.trim();
+        int firstCharIndex = 0;
+        Double res;
+        for (int i = tmp.length() - 1; i >=0; i--) {
+            if (tmp.charAt(i) >= '0' && tmp.charAt(i) <= '9') {
+                firstCharIndex = i + 1;
+                break;
+            }
+        }
+        if (firstCharIndex == tmp.length()) {
+            res = Double.valueOf(tmp);
+        } else {
+            String unit = tmp.substring(firstCharIndex).trim().toLowerCase();
+            res = Double.valueOf(tmp.substring(0, firstCharIndex));
+            switch (unit) {
+                case "kb": res *= 1024; break;
+                case "mb": res *= 1024 * 1024; break;
+                case "gb": res *= 1024 * 1024 * 1024; break;
+            }
+        }
+        return res;
     }
 }

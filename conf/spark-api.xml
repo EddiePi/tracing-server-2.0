@@ -49,4 +49,14 @@
             <value>byte</value>
         </group>
     </rule>
+    <rule>
+        <regex>.*stored as (?:values|bytes) in memory.*estimated size (?&lt;byte&gt;[0-9]+\.[0-9]+.*),.*</regex>
+        <dateOffset>-7200000</dateOffset>
+        <group>
+            <name>byte.stored</name>
+            <type>event</type>
+            <isFinish>true</isFinish>
+            <value>byte</value>
+        </group>
+    </rule>
 </rules>
