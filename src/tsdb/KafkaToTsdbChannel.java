@@ -165,6 +165,9 @@ public class KafkaToTsdbChannel {
 
     private List<PackedMessage> maybePackMessage(String kafkaMessage) {
         int separatorIndex = kafkaMessage.indexOf(' ');
+        if(separatorIndex <= 0) {
+            return null;
+        }
         String logMessage = kafkaMessage.substring(separatorIndex).trim();
         String componentId = kafkaMessage.substring(0, separatorIndex).trim();
         if (!componentId.matches("(container.*)|(nodemanager)")) {
@@ -190,7 +193,7 @@ public class KafkaToTsdbChannel {
                         }
                         Map<String, String> tagMap = new HashMap<>();
                         for(String tagName: group.tags) {
-                            String tagValue = matcher.group(tagName).replace(' ', '_');
+                            String tagValue = matcher.group(tagName).replaceAll("\\s|#", "_");
                             tagMap.put(tagName, tagValue);
                         }
                         PackedMessage packedMessage =
