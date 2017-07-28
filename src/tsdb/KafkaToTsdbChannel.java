@@ -89,8 +89,8 @@ public class KafkaToTsdbChannel {
                         e.printStackTrace();
                     }
                 }
-                consumer.close(5, TimeUnit.SECONDS);
             }
+            consumer.close(5, TimeUnit.SECONDS);
         }
     }
 
