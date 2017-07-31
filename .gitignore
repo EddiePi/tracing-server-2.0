@@ -7,3 +7,4 @@ out/
 *.sh
 slaves
 *.api
+*.bak
