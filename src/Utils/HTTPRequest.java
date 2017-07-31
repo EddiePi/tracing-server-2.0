@@ -1,13 +1,17 @@
 package Utils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.util.EntityUtils;
+
+import javax.net.ssl.HttpsURLConnection;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.http.HttpHeaders.USER_AGENT;
 
 /**
  * Created by Eddie on 2017/6/24.
@@ -76,53 +80,101 @@ public class HTTPRequest {
      *            请求参数，请求参数应该是 name1=value1&name2=value2 的形式。
      * @return 所代表远程资源的响应结果
      */
+//    public static String sendPost(String url, String param) {
+//        PrintWriter out = null;
+//        BufferedReader in = null;
+//        String result = "";
+//        try {
+//            URL realUrl = new URL(url);
+//            // 打开和URL之间的连接
+//            URLConnection conn = realUrl.openConnection();
+//            // 设置通用的请求属性
+//            conn.setRequestProperty("accept", "*/*");
+//            conn.setRequestProperty("connection", "Keep-Alive");
+//            conn.setRequestProperty("user-agent",
+//                    "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+//            // 发送POST请求必须设置如下两行
+//            conn.setDoOutput(true);
+//            conn.setDoInput(true);
+//            // 获取URLConnection对象对应的输出流
+//            out = new PrintWriter(conn.getOutputStream());
+//            // 发送请求参数
+//            out.print(param);
+//            // flush输出流的缓冲
+//            out.flush();
+//            // 定义BufferedReader输入流来读取URL的响应
+//            in = new BufferedReader(
+//                    new InputStreamReader(conn.getInputStream()));
+//            String line;
+//            while ((line = in.readLine()) != null) {
+//                result += line;
+//            }
+//        } catch (Exception e) {
+//            System.out.println("Error in sending POST request." + e);
+//            e.printStackTrace();
+//        }
+//        //使用finally块来关闭输出流、输入流
+//        finally{
+//            try{
+//                if(out!=null){
+//                    out.close();
+//                }
+//                if(in!=null){
+//                    in.close();
+//                }
+//            }
+//            catch(IOException ex){
+//                ex.printStackTrace();
+//            }
+//        }
+//        return result;
+//    }
+
+    // HTTP POST request
     public static String sendPost(String url, String param) {
-        PrintWriter out = null;
+        String response = "";
+        DataOutputStream wr = null;
         BufferedReader in = null;
-        String result = "";
         try {
-            URL realUrl = new URL(url);
-            // 打开和URL之间的连接
-            URLConnection conn = realUrl.openConnection();
-            // 设置通用的请求属性
-            conn.setRequestProperty("accept", "*/*");
-            conn.setRequestProperty("connection", "Keep-Alive");
-            conn.setRequestProperty("user-agent",
-                    "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
-            // 发送POST请求必须设置如下两行
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            // 获取URLConnection对象对应的输出流
-            out = new PrintWriter(conn.getOutputStream());
-            // 发送请求参数
-            out.print(param);
-            // flush输出流的缓冲
-            out.flush();
-            // 定义BufferedReader输入流来读取URL的响应
+            URL obj = new URL(url);
+            HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+
+            // add request head
+            con.setRequestMethod("POST");
+            con.setRequestProperty("accept", "*/*");
+            con.setRequestProperty("connection", "Keep-Alive");
+            con.setRequestProperty("user-agent", USER_AGENT);
+
+            // send post request
+            con.setDoOutput(true);
+            con.setDoInput(true);
+            wr = new DataOutputStream(con.getOutputStream());
+            wr.writeBytes(param);
+            wr.flush();
+
             in = new BufferedReader(
-                    new InputStreamReader(conn.getInputStream()));
-            String line;
-            while ((line = in.readLine()) != null) {
-                result += line;
+                    new InputStreamReader(con.getInputStream()));
+            String inputLine;
+
+
+            while ((inputLine = in.readLine()) != null) {
+                response += inputLine;
             }
-        } catch (Exception e) {
-            System.out.println("Error in sending POST request." + e);
+        } catch (IOException e) {
             e.printStackTrace();
-        }
-        //使用finally块来关闭输出流、输入流
-        finally{
-            try{
-                if(out!=null){
-                    out.close();
-                }
-                if(in!=null){
+        } finally {
+            try {
+                if (in != null) {
                     in.close();
                 }
+                if (wr != null) {
+                    wr.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            catch(IOException ex){
-                ex.printStackTrace();
-            }
+
         }
-        return result;
+        return response;
     }
 }
