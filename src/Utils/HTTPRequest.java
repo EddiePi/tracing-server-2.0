@@ -4,7 +4,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 
-import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
@@ -136,24 +135,24 @@ public class HTTPRequest {
         DataOutputStream wr = null;
         BufferedReader in = null;
         try {
-            URL obj = new URL(url);
-            HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+            URL realUrl = new URL(url);
+            URLConnection conn = realUrl.openConnection();
 
             // add request head
-            con.setRequestMethod("POST");
-            con.setRequestProperty("accept", "*/*");
-            con.setRequestProperty("connection", "Keep-Alive");
-            con.setRequestProperty("user-agent", USER_AGENT);
+            conn.setRequestProperty("accept", "*/*");
+            conn.setRequestProperty("connection", "Keep-Alive");
+            conn.setRequestProperty("user-agent",
+                    "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
 
             // send post request
-            con.setDoOutput(true);
-            con.setDoInput(true);
-            wr = new DataOutputStream(con.getOutputStream());
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            wr = new DataOutputStream(conn.getOutputStream());
             wr.writeBytes(param);
             wr.flush();
 
             in = new BufferedReader(
-                    new InputStreamReader(con.getInputStream()));
+                    new InputStreamReader(conn.getInputStream()));
             String inputLine;
 
 
