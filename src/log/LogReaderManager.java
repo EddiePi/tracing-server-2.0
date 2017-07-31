@@ -11,7 +11,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -32,12 +34,14 @@ public class LogReaderManager {
     Thread nodeManagerReadThread;
     ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
     LogAPICollector apiCollector;
+    Map<String, Integer> newAppList;
     boolean customAPIEnabled;
 
     public LogReaderManager() {
         conf = TracerConf.getInstance();
         appRootDir = new File(conf.getStringOrDefault("tracer.log.app.root", "~/hadoop-2.7.3/logs/userlogs"));
         applicationDirs = appRootDir.listFiles();
+        newAppList = new HashMap<>();
         if (applicationDirs == null) {
             applicationDirs = new File[0];
         }
@@ -137,9 +141,16 @@ public class LogReaderManager {
 
                         // The file name is also the containerId.
                         String name = file.getName();
+                        if(name.contains("application")) {
+                            newAppList.put(name, 1);
+                        }
                         if(name.contains("container")) {
-                            tracer.addContainerMonitor(name);
-                            runningContainerMap.put(name, new ContainerLogReader(file.getAbsolutePath()));
+                            String appId = containerIdToAppId(name);
+                            if(newAppList.get(appId) != null) {
+                                tracer.addContainerMonitor(name);
+                                runningContainerMap.put(name, new ContainerLogReader(file.getAbsolutePath()));
+                            }
+
                         }
                     }
 
@@ -165,6 +176,7 @@ public class LogReaderManager {
                 runningContainerMap.remove(containerId);
         if(logReaderToRemove != null) {
             logReaderToRemove.stop();
+            newAppList.remove(containerIdToAppId(containerId));
         }
     }
 
@@ -229,5 +241,11 @@ public class LogReaderManager {
         String[] words = logMessage.split("\\s+");
         Long timestamp = Timestamp.valueOf(words[0] + " " + words[1].replace(',', '.')).getTime();
         return timestamp;
+    }
+
+    private String containerIdToAppId(String containerId) {
+        String[] parts = containerId.split("_");
+        String appId = "application_" + parts[parts.length - 4] + "_" + parts[parts.length - 3];
+        return appId;
     }
 }
