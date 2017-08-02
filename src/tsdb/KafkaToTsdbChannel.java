@@ -157,7 +157,7 @@ public class KafkaToTsdbChannel {
             builder.addMetric(packedMessage.name)
                     .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
                     .addTags(packedMessage.tagMap)
-                    .addTag("container", packedMessage.containerId)
+                    .addTag("container", parseShortContainerId(packedMessage.containerId))
                     .addTag("app", appId);
         }
         return true;
@@ -210,18 +210,12 @@ public class KafkaToTsdbChannel {
         return packedMessagesList;
     }
 
-    private String containerIdToAppId(String containerId) {
-        String[] parts = containerId.split("_");
-        String appId = "application_" + parts[parts.length - 4] + "_" + parts[parts.length - 3];
-        return appId;
-    }
-
     private Map<String, String> buildAllTags(String[] metrics) {
         String containerId = metrics[0];
         String appId = containerIdToAppId(containerId);
         Map<String, String> tagMap = new HashMap<>();
         tagMap.put("app", appId);
-        tagMap.put("container", containerId);
+        tagMap.put("container", parseShortContainerId(containerId));
         if(metrics.length > 9) {
             for(int i = 9; i < metrics.length; i++) {
                 String[] tagNValue = metrics[i].split(":");
@@ -256,5 +250,16 @@ public class KafkaToTsdbChannel {
             }
         }
         return res;
+    }
+
+    private String parseShortContainerId(String containerId) {
+        String[] parts = containerId.split("_");
+        String shortId = parts[parts.length - 2] + "_" + parts[parts.length - 1];
+    }
+
+    private String containerIdToAppId(String containerId) {
+        String[] parts = containerId.split("_");
+        String appId = "application_" + parts[parts.length - 4] + "_" + parts[parts.length - 3];
+        return appId;
     }
 }
