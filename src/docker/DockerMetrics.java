@@ -31,10 +31,11 @@ public class DockerMetrics {
     public Long memoryUsage = 0L;
 
     // disk taskMetrics
-    public Long diskReadBytes = 0L;
-    public Long diskWriteBytes = 0L;
-    public Double diskReadRate = 0.0;
-    public Double diskWriteRate = 0.0;
+    public Long diskServiceBytes = 0L;
+    public Long diskServiceTime = 0L;
+    public Long diskQueued = 0L;
+    public Long diskIOTime = 0L;
+    public Double diskRate = 0.0;
 
     // network taskMetrics
     public Long netRecBytes = 0L;

@@ -47,8 +47,10 @@ public class KafkaMetricSender {
                 parseTimeStr(dm.timestamp) + "," +
                 dm.cpuRate.toString() + "," +
                 dm.memoryUsage.toString() + "," +
-                dm.diskReadBytes.toString() + "," +
-                dm.diskWriteBytes.toString() + "," +
+                dm.diskServiceBytes.toString() + "," +
+                dm.diskServiceTime.toString() + "," +
+                dm.diskQueued.toString() + "," +
+                dm.diskIOTime.toString() + "," +
                 dm.netRecBytes.toString() + "," +
                 dm.netTransBytes.toString();
 //        if (dm.eventList.size() > 0) {

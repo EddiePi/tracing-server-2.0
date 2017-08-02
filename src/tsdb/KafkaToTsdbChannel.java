@@ -112,8 +112,11 @@ public class KafkaToTsdbChannel {
             Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
             Double cpuUsage = Double.valueOf(metrics[2]);
             Long memoryUsage = Long.valueOf(metrics[3]);
-            Double diskRate = Double.valueOf(metrics[4]) + Double.valueOf(metrics[5]);
-            Double netRate = Double.valueOf(metrics[6]) + Double.valueOf(metrics[7]);
+            Long diskServiceByte = Long.valueOf(metrics[4]);
+            Long diskServiceTime = Long.valueOf(metrics[5]);
+            Long diskQueued = Long.valueOf(metrics[6]);
+            Long diskIOTime = Long.valueOf(metrics[7]);
+            Double netRate = Double.valueOf(metrics[8]) + Double.valueOf(metrics[9]);
             Map<String, String> tagMap = buildAllTags(metrics);
             // cpu
             builder.addMetric("cpu")
@@ -126,8 +129,20 @@ public class KafkaToTsdbChannel {
                     .addTags(tagMap);
 
             // disk
-            builder.addMetric("disk")
-                    .setDataPoint(timestamp, diskRate)
+            builder.addMetric("disk.service.byte")
+                    .setDataPoint(timestamp, diskServiceByte)
+                    .addTags(tagMap);
+
+            builder.addMetric("disk.service.time")
+                    .setDataPoint(timestamp, diskServiceTime)
+                    .addTags(tagMap);
+
+            builder.addMetric("disk.queued")
+                    .setDataPoint(timestamp, diskQueued)
+                    .addTags(tagMap);
+
+            builder.addMetric("diskIOTime")
+                    .setDataPoint(timestamp, diskIOTime)
                     .addTags(tagMap);
 
             // network
@@ -255,6 +270,7 @@ public class KafkaToTsdbChannel {
     private String parseShortContainerId(String containerId) {
         String[] parts = containerId.split("_");
         String shortId = parts[parts.length - 2] + "_" + parts[parts.length - 1];
+        return shortId;
     }
 
     private String containerIdToAppId(String containerId) {

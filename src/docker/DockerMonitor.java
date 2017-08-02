@@ -282,10 +282,8 @@ class DockerMonitor {
         Double deltaTime = (m.timestamp - previousMetrics.timestamp) / 1000.0;
 
         // calculate the rate
-        Long deltaRead = m.diskReadBytes - previousMetrics.diskReadBytes;
-        m.diskReadRate = deltaRead / deltaTime/ 1000d;
-        Long deltaWrite = m.diskWriteBytes - previousMetrics.diskWriteBytes;
-        m.diskWriteRate = deltaWrite / deltaTime / 1000d;
+        Long deltaBytes = m.diskServiceBytes - previousMetrics.diskServiceBytes;
+        m.diskRate = deltaBytes / deltaTime/ 1000d;
         //System.out.print("deltaTime: " + deltaTime + " deltaRead: " + deltaRead + " deltaWrite: " + deltaWrite + "\n");
     }
 
@@ -296,38 +294,44 @@ class DockerMonitor {
         if(!isRunning) {
             return false;
         }
-        boolean calRate = true;
-        if (previousMetrics == null) {
+        boolean calRate;
+
+        String serviceBytesStr = readDiskFileFormat(blkioPath + "blkio.io_service_bytes");
+        if (serviceBytesStr != null) {
+            m.diskServiceBytes = Long.parseLong(serviceBytesStr);
+            calRate = true;
+        } else {
             calRate = false;
         }
-
-        String url = blkioPath + "blkio.io_service_bytes";
-        List<String> readLines = readFileLines(url);
-        if (readLines != null || readLines.size() >= 2) {
-            String[] wordsInLine = readLines.get(0).split("\\s+");
-            if(wordsInLine.length >= 3) {
-                try {
-                    if (wordsInLine.length >= 3) {
-                        String readStr = wordsInLine[2];
-                        m.diskReadBytes = Long.parseLong(readStr);
-                    } else {
-                        calRate = false;
-                    }
-                    wordsInLine = readLines.get(1).split("\\s+");
-                    if (wordsInLine.length >= 3) {
-                        String writeStr = wordsInLine[2];
-                        m.diskWriteBytes = Long.parseLong(writeStr);
-                    } else {
-                        calRate = false;
-                    }
-                } catch (IndexOutOfBoundsException e) {
-                    calRate = false;
-                }
-
-                }
-            //System.out.print("diskRead: " + m.diskReadBytes + " diskWrite: " + m.diskWriteBytes + "\n");
+        String serviceTimeStr = readDiskFileFormat(blkioPath + "blkio.io_service_time");
+        if (serviceTimeStr != null) {
+            m.diskServiceTime = Long.parseLong(serviceTimeStr);
+        }
+        String diskQueueStr = readDiskFileFormat(blkioPath + "blkio.io_queued");
+        if (diskQueueStr != null) {
+            m.diskQueued = Long.parseLong(diskQueueStr);
+        }
+        String diskIOTimeStr = readDiskFileFormat(blkioPath + "blkio.time");
+        if (diskIOTimeStr != null) {
+            m.diskIOTime = Long.parseLong(diskIOTimeStr);
         }
         return calRate;
+    }
+
+    private String readDiskFileFormat(String url) {
+        String res = null;
+        List<String> readLines = readFileLines(url);
+        if (readLines != null || readLines.size() >= 2) {
+            String[] wordsInLine = readLines.get(readLines.size() - 1).split("\\s+");
+            if(wordsInLine.length == 2) {
+                try {
+                    res = wordsInLine[1];
+                } catch (IndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return res;
     }
 
     // calculate the network I/O rate(kb/s)
@@ -428,13 +432,13 @@ class DockerMonitor {
         System.out.printf("docker pid: %s\n" +
                 "cpu rate: %s\n" +
                 "memory usage in kb: %d\n" +
-                "total parse: %d total write: %d parse rate: %s write rate: %s\n" +
+                "total disk io bytes: %d disk io rate: %f\n" +
                 "total receive: %d total transmit: %d receive rate: %s transmit rate: %s\n",
                 dockerPid,
                 currentMetrics.cpuRate,
                 currentMetrics.memoryUsage,
-                currentMetrics.diskReadBytes, currentMetrics.diskWriteBytes,
-                currentMetrics.diskReadRate, currentMetrics.diskWriteRate,
+                currentMetrics.diskServiceBytes,
+                currentMetrics.diskRate,
                 currentMetrics.netRecBytes, currentMetrics.netTransBytes,
                 currentMetrics.netRecRate, currentMetrics.netTransRate);
     }
