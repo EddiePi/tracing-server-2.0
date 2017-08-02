@@ -301,7 +301,7 @@ class DockerMonitor {
             calRate = false;
         }
 
-        String url = blkioPath + "blkio.throttle.io_service_bytes";
+        String url = blkioPath + "blkio.io_service_bytes";
         List<String> readLines = readFileLines(url);
         if (readLines != null || readLines.size() >= 2) {
             String[] wordsInLine = readLines.get(0).split("\\s+");
