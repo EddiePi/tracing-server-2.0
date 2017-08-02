@@ -153,6 +153,8 @@ public class KafkaToTsdbChannel {
         } catch (NumberFormatException e) {
             e.printStackTrace();
             return false;
+        } catch (ArrayIndexOutOfBoundsException e) {
+            e.printStackTrace();
         }
 
         return true;
