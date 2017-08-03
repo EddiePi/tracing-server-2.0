@@ -16,7 +16,7 @@ public class KafkaLogSender {
     TracerConf conf;
     String kafkaTopic;
 
-    // The name is either containerId-log or 'nodemanager-log'.
+    // The name is either containerId-log or 'nodemanager-log' or 'resourcemanager-log'.
     String key;
 
     public KafkaLogSender(String key) {

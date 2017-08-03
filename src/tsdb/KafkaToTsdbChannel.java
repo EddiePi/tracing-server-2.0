@@ -71,8 +71,10 @@ public class KafkaToTsdbChannel {
                         hasMessage = hasMessage | metricTransformer(value);
                     } else if (key.matches("container.*-log")) {
                         hasMessage = hasMessage | containerLogTransformer(value);
-                    } else if (key.matches("nodemanager-log")) {
+                    } else if (key.equals("nodemanager-log")) {
                         hasMessage = hasMessage | managerLogTransformer(value);
+                    } else {
+                        System.out.printf("unrecognized kafka key: %s\n", key);
                     }
                 }
                 if (hasMessage) {
@@ -109,7 +111,7 @@ public class KafkaToTsdbChannel {
         if(metrics.length < 8) {
             return false;
         }
-        System.out.printf("metricStr: %s\n", metricStr);
+        //System.out.printf("metricStr: %s\n", metricStr);
         try {
             Long timestamp = Timestamp.valueOf(metrics[1]).getTime();
             Double cpuUsage = Double.valueOf(metrics[2]);
@@ -172,20 +174,7 @@ public class KafkaToTsdbChannel {
         if(packedMessageList.size() == 0) {
             return false;
         }
-        for(PackedMessage packedMessage: packedMessageList) {
-            String appId = containerIdToAppId(packedMessage.containerId);
-            if(packedMessage.containerId.equals("")) {
-                builder.addMetric(packedMessage.name)
-                        .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
-                        .addTags(packedMessage.tagMap);
-            } else {
-                builder.addMetric(packedMessage.name)
-                        .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
-                        .addTags(packedMessage.tagMap)
-                        .addTag("container", parseShortContainerId(packedMessage.containerId))
-                        .addTag("app", appId);
-            }
-        }
+        buildPackedMessate(packedMessageList);
         return true;
     }
 
@@ -204,7 +193,7 @@ public class KafkaToTsdbChannel {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
-                System.out.printf("matched log: %s\n", logMessage);
+                // System.out.printf("matched log: %s\n", logMessage);
                 for(MessageMark.Group group: messageMark.groups) {
                     try {
                         String name = group.name;
@@ -245,6 +234,7 @@ public class KafkaToTsdbChannel {
         if(packedMessageList.size() == 0) {
             return false;
         }
+        buildPackedMessate(packedMessageList);
         return true;
     }
 
@@ -255,7 +245,7 @@ public class KafkaToTsdbChannel {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
-                System.out.printf("matched log: %s\n", logMessage);
+                System.out.printf("matched manager log: %s\n", logMessage);
                 for(MessageMark.Group group: messageMark.groups) {
                     try {
                         String name = group.name;
@@ -278,7 +268,7 @@ public class KafkaToTsdbChannel {
                             String tagValue = matcher.group(tagName).replaceAll("\\s|#", "_");
                             if (tagName.equals("container")) {
                                 containerId = tagValue;
-                            } else {
+                            } else if (!tagName.equals("state")) {
                                 tagMap.put(tagName, tagValue);
                             }
                             // if we the metric name is 'state', we must have a tag also named 'stage'.
@@ -299,6 +289,23 @@ public class KafkaToTsdbChannel {
             }
         }
         return packedMessagesList;
+    }
+
+    private void buildPackedMessate(List<PackedMessage> packedMessageList) {
+        for(PackedMessage packedMessage: packedMessageList) {
+            String appId = containerIdToAppId(packedMessage.containerId);
+            if(packedMessage.containerId.equals("")) {
+                builder.addMetric(packedMessage.name)
+                        .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
+                        .addTags(packedMessage.tagMap);
+            } else {
+                builder.addMetric(packedMessage.name)
+                        .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
+                        .addTags(packedMessage.tagMap)
+                        .addTag("container", parseShortContainerId(packedMessage.containerId))
+                        .addTag("app", appId);
+            }
+        }
     }
 
     private Map<String, String> buildAllTags(String[] metrics) {

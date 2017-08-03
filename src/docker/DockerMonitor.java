@@ -111,11 +111,18 @@ class DockerMonitor {
 //            }
             //int count = 3;
             //int index = 0;
+            int maxRetry = 0;
             while (isRunning) {
                 if(!isRealDockerOn) {
                     dockerId = runShellCommand("docker inspect --format={{.Id}} " + containerId);
                     if(dockerId.contains("Error") || dockerId.length() == 0) {
                         sendZeroMetrics();
+                        maxRetry++;
+                        if (maxRetry >= 10) {
+                            System.out.print("no docker started after 10 retry. abandon monitoring the docker\n");
+                            isRunning = false;
+                            break;
+                        }
                         System.out.printf("docker for %s is not started yet. retry in %d milliseconds.\n",
                                 containerId, monitorInterval);
                     } else {

@@ -160,6 +160,7 @@ public class HTTPRequest {
                 response += inputLine;
             }
         } catch (IOException e) {
+            System.out.printf("Error message: %s\n", param);
             e.printStackTrace();
         } finally {
             try {

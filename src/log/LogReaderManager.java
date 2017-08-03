@@ -63,7 +63,7 @@ public class LogReaderManager {
             nodeManagerLog = new File(yarnLogRootDir + "/hadoop-" + username + "-nodemanager-" + hostname + ".log");
         }
 
-        nodeManagerReaderRunnable = new LogReaderRunnable("nodemanager");
+        nodeManagerReaderRunnable = new LogReaderRunnable("nodemanager", nodeManagerLog);
         checkingRunnable = new CheckAppDirRunnable();
         nodeManagerReadThread = new Thread(nodeManagerReaderRunnable);
         checkingThread = new Thread(checkingRunnable);
@@ -75,7 +75,7 @@ public class LogReaderManager {
             if(!resourceManagerLog.exists()) {
                 resourceManagerLog = new File(yarnLogRootDir + "/hadoop-" + username + "resourcemanager-" + hostname + ".log");
             }
-            resourceManagerReaderRunnable = new LogReaderRunnable("resourcemanager");
+            resourceManagerReaderRunnable = new LogReaderRunnable("resourcemanager", resourceManagerLog);
             resourceManagerReadThread = new Thread(resourceManagerReaderRunnable);
             registerDefaultAPI();
             customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled", false);
@@ -86,21 +86,24 @@ public class LogReaderManager {
     }
 
     private class LogReaderRunnable implements Runnable {
-        String kafkaKey;
-        LogReaderRunnable(String kafkaKey) {
-            this.kafkaKey = kafkaKey;
+        File managerLogFile;
+        KafkaLogSender logSender;
+        LogReaderRunnable(String kafkaKey, File managerLogFile) {
+            this.managerLogFile = managerLogFile;
+            logSender = new KafkaLogSender(kafkaKey);
         }
-        KafkaLogSender logSender = new KafkaLogSender(kafkaKey);
 
         boolean isReading = true;
         List<String> messageBuffer = new ArrayList<>();
         BufferedReader bufferedReader = null;
+        // when we start the tracing server, we need to navigate to the end of the file.
+        // when the variable is true, we do not send what we read to kafka.
         boolean isNavigating = true;
         @Override
         public void run() {
             while(isReading) {
                 try {
-                    if (!nodeManagerLog.exists()) {
+                    if (!managerLogFile.exists()) {
                         Thread.sleep(1000);
                         isNavigating = false;
                         continue;
@@ -108,7 +111,7 @@ public class LogReaderManager {
                     String line;
                     messageBuffer.clear();
                     if (bufferedReader == null) {
-                        InputStream is = new FileInputStream(nodeManagerLog);
+                        InputStream is = new FileInputStream(managerLogFile);
                         Reader reader = new InputStreamReader(is, "GBK");
                         bufferedReader = new BufferedReader(reader);
                     }
