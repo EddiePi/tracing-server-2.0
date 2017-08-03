@@ -294,15 +294,17 @@ class DockerMonitor {
         if(!isRunning) {
             return false;
         }
-        boolean calRate;
+        boolean calRate = false;
+
 
         String serviceBytesStr = readDiskFileFormat(blkioPath + "blkio.io_service_bytes");
         if (serviceBytesStr != null) {
             m.diskServiceBytes = Long.parseLong(serviceBytesStr);
-            calRate = true;
-        } else {
-            calRate = false;
+            if(previousMetrics != null) {
+                calRate = true;
+            }
         }
+
         String serviceTimeStr = readDiskFileFormat(blkioPath + "blkio.io_service_time");
         if (serviceTimeStr != null) {
             m.diskServiceTime = Long.parseLong(serviceTimeStr);
@@ -311,10 +313,21 @@ class DockerMonitor {
         if (diskQueueStr != null) {
             m.diskQueued = Long.parseLong(diskQueueStr);
         }
-        String diskIOTimeStr = readDiskFileFormat(blkioPath + "blkio.time");
-        if (diskIOTimeStr != null) {
-            m.diskIOTime = Long.parseLong(diskIOTimeStr);
+        Long blkioTime = 0L;
+        List<String> readLines = readFileLines(blkioPath + "blkio.time");
+        if (readLines != null || readLines.size() >= 1) {
+            for(String line: readLines) {
+                try {
+                    String wordInLine[] = line.split("\\s+");
+                    blkioTime += Long.parseLong(wordInLine[1]);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                }
+            }
         }
+        m.diskIOTime = blkioTime;
         return calRate;
     }
 
