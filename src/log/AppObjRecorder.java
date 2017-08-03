@@ -20,7 +20,7 @@ public class AppObjRecorder {
 
     private AppObjRecorder(){
         LogAPICollector collector = LogAPICollector.getInstance();
-        allMarks = collector.allRuleMarkList;
+        allMarks = collector.containerRuleMarkList;
     }
 
     public static AppObjRecorder getInstance() {

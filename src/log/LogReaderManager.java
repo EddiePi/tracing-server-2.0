@@ -25,20 +25,25 @@ public class LogReaderManager {
     File appRootDir;
     File[] applicationDirs;
     File nodeManagerLog;
+    File resourceManagerLog;
     Tracer tracer = Tracer.getInstance();
     // Key is the container's id.
     public ConcurrentMap<String, ContainerLogReader> runningContainerMap = new ConcurrentHashMap<>();
-    NodeManagerLogReaderRunnable nodeManagerReaderRunnable;
+    LogReaderRunnable nodeManagerReaderRunnable;
+    LogReaderRunnable resourceManagerReaderRunnable;
     CheckAppDirRunnable checkingRunnable;
     Thread checkingThread;
     Thread nodeManagerReadThread;
+    Thread resourceManagerReadThread;
     ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
     LogAPICollector apiCollector;
     Map<String, Integer> newAppList;
     boolean customAPIEnabled;
+    boolean isMaster;
 
     public LogReaderManager() {
         conf = TracerConf.getInstance();
+        isMaster = conf.getBooleanOrDefault("tracer.is-master", false);
         appRootDir = new File(conf.getStringOrDefault("tracer.log.app.root", "~/hadoop-2.7.3/logs/userlogs"));
         applicationDirs = appRootDir.listFiles();
         newAppList = new HashMap<>();
@@ -52,19 +57,26 @@ public class LogReaderManager {
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        String nodeManagerDir = conf.getStringOrDefault("tracer.log.nodemanager.root", "~/hadoop-2.7.3/logs");
-        nodeManagerLog = new File(nodeManagerDir + "/yarn-" + username + "-nodemanager-" + hostname + ".log");
+        String yarnLogRootDir = conf.getStringOrDefault("tracer.log.nodemanager.root", "~/hadoop-2.7.3/logs");
+        nodeManagerLog = new File(yarnLogRootDir + "/yarn-" + username + "-nodemanager-" + hostname + ".log");
         if(!nodeManagerLog.exists()) {
-            nodeManagerLog = new File(nodeManagerDir + "/hadoop-" + username + "-nodemanager-" + hostname + ".log");
+            nodeManagerLog = new File(yarnLogRootDir + "/hadoop-" + username + "-nodemanager-" + hostname + ".log");
         }
 
-        nodeManagerReaderRunnable = new NodeManagerLogReaderRunnable();
+        nodeManagerReaderRunnable = new LogReaderRunnable("nodemanager");
         checkingRunnable = new CheckAppDirRunnable();
         nodeManagerReadThread = new Thread(nodeManagerReaderRunnable);
         checkingThread = new Thread(checkingRunnable);
 
         apiCollector = LogAPICollector.getInstance();
-        if (conf.getBooleanOrDefault("tracer.is-master", false)) {
+        // if the trace server runs with resource manager, we need to monitor the log of RM, and send log to Opentsdb.
+        if (isMaster) {
+            resourceManagerLog = new File(yarnLogRootDir + "/yarn-" + username + "resourcemanager-" + hostname + ".log");
+            if(!resourceManagerLog.exists()) {
+                resourceManagerLog = new File(yarnLogRootDir + "/hadoop-" + username + "resourcemanager-" + hostname + ".log");
+            }
+            resourceManagerReaderRunnable = new LogReaderRunnable("resourcemanager");
+            resourceManagerReadThread = new Thread(resourceManagerReaderRunnable);
             registerDefaultAPI();
             customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled", false);
             if (customAPIEnabled) {
@@ -73,8 +85,12 @@ public class LogReaderManager {
         }
     }
 
-    private class NodeManagerLogReaderRunnable implements Runnable {
-        KafkaLogSender logSender = new KafkaLogSender("nodemanager");
+    private class LogReaderRunnable implements Runnable {
+        String kafkaKey;
+        LogReaderRunnable(String kafkaKey) {
+            this.kafkaKey = kafkaKey;
+        }
+        KafkaLogSender logSender = new KafkaLogSender(kafkaKey);
 
         boolean isReading = true;
         List<String> messageBuffer = new ArrayList<>();
@@ -169,6 +185,9 @@ public class LogReaderManager {
     public void start() {
         checkingThread.start();
         nodeManagerReadThread.start();
+        if (isMaster) {
+            resourceManagerReadThread.start();
+        }
     }
 
     public void stopContainerLogReaderById(String containerId) {
@@ -184,6 +203,9 @@ public class LogReaderManager {
         nodeManagerReaderRunnable.destroy();
         for(ContainerLogReader logReader: runningContainerMap.values()) {
             logReader.stop();
+        }
+        if(isMaster) {
+            resourceManagerReaderRunnable.destroy();
         }
     }
 
@@ -215,16 +237,17 @@ public class LogReaderManager {
     }
 
 
-    // we need to re-register the API after detecting new apps.
+    // we need to re-registerContainerRules the API after detecting new apps.
     // In this design, we don't have to restart the tracing server to import changed api file
     private void registerDefaultAPI() {
-        List<AbstractLogAPI> defaultAPIList = new ArrayList<>();
-        defaultAPIList.add(new SparkLogAPI());
-        defaultAPIList.add(new MapReduceLogAPI());
+        List<AbstractLogAPI> defaultContainerAPIList = new ArrayList<>();
+        defaultContainerAPIList.add(new SparkLogAPI());
+        defaultContainerAPIList.add(new MapReduceLogAPI());
 
-        for(AbstractLogAPI api: defaultAPIList) {
-            apiCollector.register(api);
+        for(AbstractLogAPI api: defaultContainerAPIList) {
+            apiCollector.registerContainerRules(api);
         }
+        apiCollector.registerManagerRules(new YarnLogAPI());
     }
 
     private void registerCustomAPI() {
@@ -232,7 +255,7 @@ public class LogReaderManager {
         for(String filePath: filePaths) {
             File apiFile = new File(filePath);
             if(apiFile.exists()) {
-                apiCollector.register(new CustomLogAPI(apiFile));
+                apiCollector.registerContainerRules(new CustomLogAPI(apiFile));
             }
         }
     }

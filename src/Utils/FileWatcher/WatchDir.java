@@ -113,7 +113,7 @@ public class WatchDir {
                 }
 
                 // if directory is created, and watching recursively, then
-                // register it and its sub-directories
+                // registerContainerRules it and its sub-directories
                 if (subDir && (kind == StandardWatchEventKinds.ENTRY_CREATE)) {
                     try {
                         if (Files.isDirectory(child, NOFOLLOW_LINKS)) {

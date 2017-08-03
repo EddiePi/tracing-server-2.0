@@ -7,7 +7,8 @@ import java.util.List;
  * Created by Eddie on 2017/7/3.
  */
 public class LogAPICollector {
-    public List<MessageMark> allRuleMarkList = new ArrayList<>();
+    public List<MessageMark> containerRuleMarkList = new ArrayList<>();
+    public List<MessageMark> managerRuleMarkList = new ArrayList<>();
 
     private LogAPICollector(){}
 
@@ -17,12 +18,15 @@ public class LogAPICollector {
         return instance;
     }
 
-    public void register(AbstractLogAPI api) {
-        allRuleMarkList.addAll(api.messageMarkList);
+    public void registerContainerRules(AbstractLogAPI api) {
+        containerRuleMarkList.addAll(api.messageMarkList);
+    }
+
+    public void registerManagerRules(AbstractLogAPI api) {
+        managerRuleMarkList.addAll(api.messageMarkList);
     }
 
     public void clearAllAPI() {
-        allRuleMarkList.clear();
+        containerRuleMarkList.clear();
     }
-
 }

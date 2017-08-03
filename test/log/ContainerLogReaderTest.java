@@ -22,7 +22,7 @@ public class ContainerLogReaderTest {
     @Before
     public void setUp() throws Exception {
         collector = LogAPICollector.getInstance();
-        collector.allRuleMarkList.addAll(XMLParser.parse("/Users/Eddie/gitRepo/tracing-server-2.0/conf/Testing-api.xml"));
+        collector.containerRuleMarkList.addAll(XMLParser.parse("/Users/Eddie/gitRepo/tracing-server-2.0/conf/Testing-api.xml"));
         testLog = new ArrayList<>();
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         Date nowDate = new Date();
@@ -35,7 +35,7 @@ public class ContainerLogReaderTest {
     public void maybePackMessage() throws Exception {
         List<PackedMessage> packedMessagesList = new ArrayList<>();
         for (String logMessage : testLog) {
-            for (MessageMark messageMark : collector.allRuleMarkList) {
+            for (MessageMark messageMark : collector.containerRuleMarkList) {
                 Pattern pattern = Pattern.compile(messageMark.regex);
                 Matcher matcher = pattern.matcher(logMessage);
                 if (matcher.matches()) {

@@ -26,9 +26,7 @@
             <!-- required -->
             <name>stage</name>
             <type>state</type>
-            <tags>
-                <tag>stageID</tag>
-            </tags>
+            <tag>stageID</tag>
             <!-- optional, default: false -->
             <isFinish>false</isFinish>
             <value>1</value>
@@ -36,9 +34,7 @@
         <group>
             <name>task</name>
             <type>event</type>
-            <tags>
-                <tag>TID</tag>
-            </tags>
+            <tag>TID</tag>
             <isFinish>true</isFinish>
             <value>1</value>
         </group>

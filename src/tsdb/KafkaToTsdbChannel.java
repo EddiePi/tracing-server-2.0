@@ -69,8 +69,10 @@ public class KafkaToTsdbChannel {
                     String value = record.value();
                     if (key.matches("container.*-metric")) {
                         hasMessage = hasMessage | metricTransformer(value);
-                    } else if (key.matches(".*-log")) {
-                        hasMessage = hasMessage | logTransformer(value);
+                    } else if (key.matches("container.*-log")) {
+                        hasMessage = hasMessage | containerLogTransformer(value);
+                    } else if (key.matches("nodemanager-log")) {
+                        hasMessage = hasMessage | managerLogTransformer(value);
                     }
                 }
                 if (hasMessage) {
@@ -160,9 +162,10 @@ public class KafkaToTsdbChannel {
         return true;
     }
 
-    private boolean logTransformer(String kafkaMessage) {
+    private boolean containerLogTransformer(String kafkaMessage) {
         List<PackedMessage> packedMessageList;
-        packedMessageList = maybePackMessage(kafkaMessage);
+        packedMessageList = maybePackContainerMessage(kafkaMessage);
+
         if(packedMessageList == null) {
             return false;
         }
@@ -171,27 +174,33 @@ public class KafkaToTsdbChannel {
         }
         for(PackedMessage packedMessage: packedMessageList) {
             String appId = containerIdToAppId(packedMessage.containerId);
-            builder.addMetric(packedMessage.name)
-                    .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
-                    .addTags(packedMessage.tagMap)
-                    .addTag("container", parseShortContainerId(packedMessage.containerId))
-                    .addTag("app", appId);
+            if(packedMessage.containerId.equals("")) {
+                builder.addMetric(packedMessage.name)
+                        .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
+                        .addTags(packedMessage.tagMap);
+            } else {
+                builder.addMetric(packedMessage.name)
+                        .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
+                        .addTags(packedMessage.tagMap)
+                        .addTag("container", parseShortContainerId(packedMessage.containerId))
+                        .addTag("app", appId);
+            }
         }
         return true;
     }
 
-    private List<PackedMessage> maybePackMessage(String kafkaMessage) {
+    private List<PackedMessage> maybePackContainerMessage(String kafkaMessage) {
         int separatorIndex = kafkaMessage.indexOf(' ');
         if(separatorIndex <= 0) {
             return null;
         }
         String logMessage = kafkaMessage.substring(separatorIndex).trim();
         String componentId = kafkaMessage.substring(0, separatorIndex).trim();
-        if (!componentId.matches("(container.*)|(nodemanager)")) {
+        if (!componentId.matches("(container.*)")) {
             return null;
         }
         List<PackedMessage> packedMessagesList = new ArrayList<>();
-        for(MessageMark messageMark: collector.allRuleMarkList) {
+        for(MessageMark messageMark: collector.containerRuleMarkList) {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
@@ -215,6 +224,71 @@ public class KafkaToTsdbChannel {
                         }
                         PackedMessage packedMessage =
                                 new PackedMessage(componentId, timestamp, name, tagMap, value);
+                        packedMessagesList.add(packedMessage);
+                    } catch (IllegalStateException e) {
+                        e.printStackTrace();
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return packedMessagesList;
+    }
+
+    private boolean managerLogTransformer(String kafkaMessage) {
+        List<PackedMessage> packedMessageList;
+        packedMessageList = maybePackManagerMessage(kafkaMessage);
+        if(packedMessageList == null) {
+            return false;
+        }
+        if(packedMessageList.size() == 0) {
+            return false;
+        }
+        return true;
+    }
+
+    private List<PackedMessage> maybePackManagerMessage(String kafkaMessage) {
+        String logMessage = kafkaMessage;
+        List<PackedMessage> packedMessagesList = new ArrayList<>();
+        for(MessageMark messageMark: collector.managerRuleMarkList) {
+            Pattern pattern = Pattern.compile(messageMark.regex);
+            Matcher matcher = pattern.matcher(logMessage);
+            if(matcher.matches()) {
+                System.out.printf("matched log: %s\n", logMessage);
+                for(MessageMark.Group group: messageMark.groups) {
+                    try {
+                        String name = group.name;
+                        String valueStr = group.value;
+                        Long timestamp = LogReaderManager.parseTimestamp(logMessage) + messageMark.dateOffset;
+                        Double value = null;
+                        String containerId = "";
+                        if(!name.equals("state")) {
+                            if (valueStr.matches("^[-+]?[\\d]*(\\.\\d*)?$")) {
+                                value = Double.valueOf(valueStr);
+                            } else {
+                                String valueWithUnit = matcher.group(valueStr);
+                                value = parseDoubleStrWithUnit(valueWithUnit);
+                            }
+                        }
+
+
+                        Map<String, String> tagMap = new HashMap<>();
+                        for (String tagName : group.tags) {
+                            String tagValue = matcher.group(tagName).replaceAll("\\s|#", "_");
+                            if (tagName.equals("container")) {
+                                containerId = tagValue;
+                            } else {
+                                tagMap.put(tagName, tagValue);
+                            }
+                            // if we the metric name is 'state', we must have a tag also named 'stage'.
+                            if(name.equals("state") && tagName.equals("state")) {
+                                Integer stateIntValue = ContainerState.stateMap.get(tagValue);
+                                value = (double)stateIntValue;
+                            }
+                        }
+                        PackedMessage packedMessage =
+                                new PackedMessage(containerId, timestamp, name, tagMap, value == null ? 1d : value);
                         packedMessagesList.add(packedMessage);
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
