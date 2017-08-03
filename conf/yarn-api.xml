@@ -24,4 +24,28 @@
             <value>1</value>
         </group>
     </rule>
+    <rule>
+        <regex>.*(?&lt;app&gt;application_[0-9]+_[0-9]+) State change from.*to (?&lt;state&gt;.*)</regex>
+        <dateOffset>0</dateOffset>
+        <group>
+            <name>app.state</name>
+            <type>state</type>
+            <tag>app</tag>
+            <tag>state</tag>
+            <isFinish>false</isFinish>
+            <value>1</value>
+        </group>
+    </rule>
+    <rule>
+        <regex>.*(?&lt;appAttempt&gt;appattempt_[0-9]+_[0-9]+_[0-9]+).*State change from.*to (?&lt;state&gt;.*)</regex>
+        <dateOffset>0</dateOffset>
+        <group>
+            <name>app.attempt.state</name>
+            <type>state</type>
+            <tag>appAttempt</tag>
+            <tag>state</tag>
+            <isFinish>false</isFinish>
+            <value>1</value>
+        </group>
+    </rule>
 </rules>

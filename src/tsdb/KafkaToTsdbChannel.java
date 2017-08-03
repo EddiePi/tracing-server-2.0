@@ -73,6 +73,8 @@ public class KafkaToTsdbChannel {
                         hasMessage = hasMessage | containerLogTransformer(value);
                     } else if (key.equals("nodemanager-log")) {
                         hasMessage = hasMessage | managerLogTransformer(value);
+                    } else if (key.equals("resourcemanager-log")) {
+                        maybeBuildRMMessage(value);
                     } else {
                         System.out.printf("unrecognized kafka key: %s\n", key);
                     }
@@ -227,7 +229,7 @@ public class KafkaToTsdbChannel {
 
     private boolean managerLogTransformer(String kafkaMessage) {
         List<PackedMessage> packedMessageList;
-        packedMessageList = maybePackManagerMessage(kafkaMessage);
+        packedMessageList = maybePackNMMessage(kafkaMessage);
         if(packedMessageList == null) {
             return false;
         }
@@ -238,7 +240,7 @@ public class KafkaToTsdbChannel {
         return true;
     }
 
-    private List<PackedMessage> maybePackManagerMessage(String kafkaMessage) {
+    private List<PackedMessage> maybePackNMMessage(String kafkaMessage) {
         String logMessage = kafkaMessage;
         List<PackedMessage> packedMessagesList = new ArrayList<>();
         for(MessageMark messageMark: collector.managerRuleMarkList) {
@@ -261,8 +263,6 @@ public class KafkaToTsdbChannel {
                                 value = parseDoubleStrWithUnit(valueWithUnit);
                             }
                         }
-
-
                         Map<String, String> tagMap = new HashMap<>();
                         for (String tagName : group.tags) {
                             String tagValue = matcher.group(tagName).replaceAll("\\s|#", "_");
@@ -273,13 +273,73 @@ public class KafkaToTsdbChannel {
                             }
                             // if we the metric name is 'state', we must have a tag also named 'stage'.
                             if(name.equals("state") && tagName.equals("state")) {
-                                Integer stateIntValue = ContainerState.stateMap.get(tagValue);
+                                Integer stateIntValue = StateCollection.containerStateMap.get(tagValue);
                                 value = (double)stateIntValue;
                             }
                         }
                         PackedMessage packedMessage =
                                 new PackedMessage(containerId, timestamp, name, tagMap, value == null ? 1d : value);
                         packedMessagesList.add(packedMessage);
+                    } catch (IllegalStateException e) {
+                        e.printStackTrace();
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return packedMessagesList;
+    }
+
+    private List<PackedMessage> maybeBuildRMMessage(String kafkaMessage) {
+        String logMessage = kafkaMessage;
+        List<PackedMessage> packedMessagesList = new ArrayList<>();
+        for(MessageMark messageMark: collector.managerRuleMarkList) {
+            Pattern pattern = Pattern.compile(messageMark.regex);
+            Matcher matcher = pattern.matcher(logMessage);
+            if(matcher.matches()) {
+                System.out.printf("matched manager log: %s\n", logMessage);
+                for(MessageMark.Group group: messageMark.groups) {
+                    try {
+                        String name = group.name;
+                        String valueStr = group.value;
+                        Long timestamp = LogReaderManager.parseTimestamp(logMessage) + messageMark.dateOffset;
+                        Double value = null;
+                        String appId = "";
+                        String appAttemptId = "";
+                        if(!name.equals("app.state") && !name.equals("app.attempt.state")) {
+                            if (valueStr.matches("^[-+]?[\\d]*(\\.\\d*)?$")) {
+                                value = Double.valueOf(valueStr);
+                            } else {
+                                String valueWithUnit = matcher.group(valueStr);
+                                value = parseDoubleStrWithUnit(valueWithUnit);
+                            }
+                        }
+                        Map<String, String> tagMap = new HashMap<>();
+                        for (String tagName : group.tags) {
+                            String tagValue = matcher.group(tagName).replaceAll("\\s|#", "_");
+                            // if we the metric name is 'state', we must have a tag also named 'stage'.
+                            if(tagName.equals("state")) {
+                                if(name.equals("app.state")) {
+                                    Integer stateIntValue = StateCollection.RMAppState.get(tagValue);
+                                    value = (double) stateIntValue;
+                                } else if(name.equals("app.attempt.state")) {
+                                    Integer stateIntValue = StateCollection.RMAppAttemptStateMap.get(tagValue);
+                                    value = (double) stateIntValue;
+                                }
+                            } else if (tagName.equals("app")) {
+                                tagMap.put("app", tagValue);
+                            } else if(tagName.equals("appAttempt")) {
+                                appId = appAttemptIdToAppId(tagValue);
+                                appAttemptId = parseShortAppAttemptId(tagValue);
+                                tagMap.put("app", appId);
+                                tagMap.put("app.attempt", appAttemptId);
+                            }
+                        }
+                        builder.addMetric(name)
+                                .setDataPoint(timestamp, value)
+                                .addTags(tagMap);
+
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
                     } catch (IllegalArgumentException e) {
@@ -359,6 +419,18 @@ public class KafkaToTsdbChannel {
     private String containerIdToAppId(String containerId) {
         String[] parts = containerId.split("_");
         String appId = "application_" + parts[parts.length - 4] + "_" + parts[parts.length - 3];
+        return appId;
+    }
+
+    private String parseShortAppAttemptId(String appAttemptId) {
+        String[] parts = appAttemptId.split("_");
+        String shortId = parts[parts.length - 1];
+        return shortId;
+    }
+
+    private String appAttemptIdToAppId(String appAttemptId) {
+        String[] parts = appAttemptId.split("_");
+        String appId = "application_" + parts[parts.length - 3] + "_" + parts[parts.length - 2];
         return appId;
     }
 }
