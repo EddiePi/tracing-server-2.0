@@ -71,9 +71,9 @@ public class LogReaderManager {
         apiCollector = LogAPICollector.getInstance();
         // if the trace server runs with resource manager, we need to monitor the log of RM, and send log to Opentsdb.
         if (isMaster) {
-            resourceManagerLog = new File(yarnLogRootDir + "/yarn-" + username + "resourcemanager-" + hostname + ".log");
+            resourceManagerLog = new File(yarnLogRootDir + "/yarn-" + username + "-resourcemanager-" + hostname + ".log");
             if(!resourceManagerLog.exists()) {
-                resourceManagerLog = new File(yarnLogRootDir + "/hadoop-" + username + "resourcemanager-" + hostname + ".log");
+                resourceManagerLog = new File(yarnLogRootDir + "/hadoop-" + username + "-resourcemanager-" + hostname + ".log");
             }
             resourceManagerReaderRunnable = new LogReaderRunnable("resourcemanager", resourceManagerLog);
             resourceManagerReadThread = new Thread(resourceManagerReaderRunnable);
@@ -88,17 +88,23 @@ public class LogReaderManager {
     private class LogReaderRunnable implements Runnable {
         File managerLogFile;
         KafkaLogSender logSender;
-        LogReaderRunnable(String kafkaKey, File managerLogFile) {
-            this.managerLogFile = managerLogFile;
-            logSender = new KafkaLogSender(kafkaKey);
-        }
-
-        boolean isReading = true;
-        List<String> messageBuffer = new ArrayList<>();
-        BufferedReader bufferedReader = null;
+        String kafkaKey;
+        boolean isReading;
+        List<String> messageBuffer;
+        BufferedReader bufferedReader;
         // when we start the tracing server, we need to navigate to the end of the file.
         // when the variable is true, we do not send what we read to kafka.
-        boolean isNavigating = true;
+        boolean isNavigating;
+        LogReaderRunnable(String kafkaKey, File managerLogFile) {
+            this.kafkaKey = kafkaKey;
+            this.managerLogFile = managerLogFile;
+            logSender = new KafkaLogSender(kafkaKey);
+            isReading = true;
+            messageBuffer = new ArrayList<>();
+            bufferedReader = null;
+            isNavigating = true;
+        }
+
         @Override
         public void run() {
             while(isReading) {
@@ -124,11 +130,9 @@ public class LogReaderManager {
                         messageBuffer.add(line);
                     }
                     for (String message : messageBuffer) {
-                        // TEST
-                        // System.out.printf("%s\n", message);
                         logSender.send(message);
                     }
-                    Thread.sleep(20);
+                    Thread.sleep(200);
 
                 } catch (InterruptedException e) {
 
@@ -187,7 +191,7 @@ public class LogReaderManager {
 
     public void start() {
         checkingThread.start();
-        nodeManagerReadThread.start();
+        //nodeManagerReadThread.start();
         if (isMaster) {
             resourceManagerReadThread.start();
         }

@@ -74,7 +74,7 @@ public class KafkaToTsdbChannel {
                     } else if (key.equals("nodemanager-log")) {
                         hasMessage = hasMessage | managerLogTransformer(value);
                     } else if (key.equals("resourcemanager-log")) {
-                        maybeBuildRMMessage(value);
+                        hasMessage = hasMessage | maybeBuildRMMessage(value);
                     } else {
                         System.out.printf("unrecognized kafka key: %s\n", key);
                     }
@@ -247,7 +247,6 @@ public class KafkaToTsdbChannel {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
-                System.out.printf("matched manager log: %s\n", logMessage);
                 for(MessageMark.Group group: messageMark.groups) {
                     try {
                         String name = group.name;
@@ -291,9 +290,9 @@ public class KafkaToTsdbChannel {
         return packedMessagesList;
     }
 
-    private List<PackedMessage> maybeBuildRMMessage(String kafkaMessage) {
+    private boolean maybeBuildRMMessage(String kafkaMessage) {
         String logMessage = kafkaMessage;
-        List<PackedMessage> packedMessagesList = new ArrayList<>();
+        boolean hasMessage = false;
         for(MessageMark messageMark: collector.managerRuleMarkList) {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
@@ -339,7 +338,7 @@ public class KafkaToTsdbChannel {
                         builder.addMetric(name)
                                 .setDataPoint(timestamp, value)
                                 .addTags(tagMap);
-
+                        hasMessage = true;
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
                     } catch (IllegalArgumentException e) {
@@ -348,7 +347,7 @@ public class KafkaToTsdbChannel {
                 }
             }
         }
-        return packedMessagesList;
+        return hasMessage;
     }
 
     private void buildPackedMessate(List<PackedMessage> packedMessageList) {
