@@ -1,5 +1,7 @@
 package tsdb;
 
+import logAPI.MessageMark;
+
 import java.io.Serializable;
 import java.util.Formatter;
 import java.util.Map;
@@ -13,6 +15,8 @@ public class PackedMessage implements Serializable {
     public String name;
     public Map<String, String> tagMap;
     public Double doubleValue;
+    public MessageType type;
+    public boolean isFinish = false;
 
     public PackedMessage(String containerId,
                          Long timeStamp,
@@ -24,6 +28,25 @@ public class PackedMessage implements Serializable {
         this.name = name;
         this.tagMap = tagMap;
         this.doubleValue = value;
+        this.type = MessageType.STATE;
+    }
+
+    public PackedMessage(String containerId,
+                         Long timeStamp,
+                         String name,
+                         Map<String, String> tagMap,
+                         Double value,
+                         String type) {
+        this.containerId = containerId;
+        this.timestamp = timeStamp;
+        this.name = name;
+        this.tagMap = tagMap;
+        this.doubleValue = value;
+        if(type.equals("event")) {
+            this.type = MessageType.EVENT;
+        } else {
+            this.type = MessageType.STATE;
+        }
     }
 
     @Override
@@ -32,5 +55,16 @@ public class PackedMessage implements Serializable {
         formatter.format("containerId: %s, timestamp: %d, name: %s, tag: %s, value: %f",
                 containerId, timestamp, name, tagMap.toString(), doubleValue);
         return formatter.toString();
+    }
+
+    public boolean isCounterPart(PackedMessage other) {
+        boolean res;
+        res = containerId.equals(other.containerId) & name.equals(other.name) & tagMap.equals(other.tagMap);
+
+        return res;
+    }
+
+    private enum MessageType {
+        EVENT, STATE
     }
 }

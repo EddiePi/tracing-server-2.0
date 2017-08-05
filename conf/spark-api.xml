@@ -40,7 +40,7 @@
         </group>
         <group>
             <name>byte.transferred</name>
-            <type>event</type>
+            <type>stage</type>
             <isFinish>true</isFinish>
             <value>byte</value>
         </group>

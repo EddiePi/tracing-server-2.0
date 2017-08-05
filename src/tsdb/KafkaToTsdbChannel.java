@@ -33,7 +33,10 @@ public class KafkaToTsdbChannel {
 
     LogAPICollector collector = LogAPICollector.getInstance();
 
+    List<PackedMessage> eventMessages;
+
     public KafkaToTsdbChannel() {
+        eventMessages = new LinkedList<>();
         props = new Properties();
         props.put("bootstrap.servers", conf.getStringOrDefault("tracer.kafka.bootstrap.servers", "localhost:9092"));
         props.put("group.id", "trace");
@@ -95,6 +98,23 @@ public class KafkaToTsdbChannel {
                         e.printStackTrace();
                     }
                 }
+
+                // we separate event message to avoid tsdb contention.
+                buildEventMessage();
+                try {
+                    String message = builder.build(true);
+
+                    // TODO: maintain the connection for performance
+                    String response = HTTPRequest.sendPost(databaseURI, message);
+                    if (!response.matches("\\s*")) {
+                        System.out.printf("Unexpected response: %s\n", response);
+                    }
+                    Thread.sleep(10);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
             consumer.close(5, TimeUnit.SECONDS);
         }
@@ -106,6 +126,7 @@ public class KafkaToTsdbChannel {
 
     public void stop() {
         transferRunnable.isRunning = false;
+        eventMessages.clear();
     }
 
     private boolean metricTransformer(String metricStr) {
@@ -200,6 +221,7 @@ public class KafkaToTsdbChannel {
                     try {
                         String name = group.name;
                         String valueStr = group.value;
+                        String type = group.type;
                         Long timestamp = LogReaderManager.parseTimestamp(logMessage) + messageMark.dateOffset;
                         Double value;
                         if (valueStr.matches("^[-+]?[\\d]*(\\.\\d*)?$")) {
@@ -214,8 +236,12 @@ public class KafkaToTsdbChannel {
                             tagMap.put(tagName, tagValue);
                         }
                         PackedMessage packedMessage =
-                                new PackedMessage(componentId, timestamp, name, tagMap, value);
-                        packedMessagesList.add(packedMessage);
+                                new PackedMessage(componentId, timestamp, name, tagMap, value, type);
+                        if(type.equals("state")) {
+                            packedMessagesList.add(packedMessage);
+                        } else {
+                            updateEventMessage(packedMessage);
+                        }
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
                     } catch (IllegalArgumentException e) {
@@ -251,6 +277,7 @@ public class KafkaToTsdbChannel {
                     try {
                         String name = group.name;
                         String valueStr = group.value;
+                        String type = group.type;
                         Long timestamp = LogReaderManager.parseTimestamp(logMessage) + messageMark.dateOffset;
                         Double value = null;
                         String containerId = "";
@@ -277,8 +304,13 @@ public class KafkaToTsdbChannel {
                             }
                         }
                         PackedMessage packedMessage =
-                                new PackedMessage(containerId, timestamp, name, tagMap, value == null ? 1d : value);
-                        packedMessagesList.add(packedMessage);
+                                new PackedMessage(containerId, timestamp, name, tagMap, value == null ? 1d : value, type);
+                        if(type.equals("state")) {
+                            packedMessagesList.add(packedMessage);
+                        } else {
+                            packedMessage.isFinish = group.isFinish;
+                            updateEventMessage(packedMessage);
+                        }
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
                     } catch (IllegalArgumentException e) {
@@ -288,6 +320,53 @@ public class KafkaToTsdbChannel {
             }
         }
         return packedMessagesList;
+    }
+
+    private void buildEventMessage() {
+        Long timestamp = System.currentTimeMillis();
+        synchronized (this.eventMessages) {
+            for(PackedMessage m: eventMessages) {
+                if(m.containerId.equals("")) {
+                    builder.addMetric(m.name)
+                            .setDataPoint(timestamp, m.doubleValue)
+                            .addTags(m.tagMap);
+                } else {
+                    builder.addMetric(m.name)
+                            .setDataPoint(timestamp, m.doubleValue)
+                            .addTags(m.tagMap)
+                            .addTag("container", parseShortContainerId(m.containerId))
+                            .addTag("app", containerIdToAppId(m.containerId));
+                }
+            }
+        }
+    }
+
+    private void updateEventMessage(PackedMessage message) {
+        int index = hasEventMessage(message);
+        synchronized (this.eventMessages) {
+            if (index < 0 && !message.isFinish) {
+                eventMessages.add(message);
+            } else if (index >= 0 && message.isFinish) {
+                eventMessages.remove(index);
+            }
+        }
+    }
+
+    /**
+     * check if we already record the event message in <code>eventMessages</code>
+     *
+     * @param message
+     * @return if we find the message, return the index; otherwise return -1
+     */
+    private int hasEventMessage(PackedMessage message) {
+        int index = -1;
+        for(int i = 0; i < eventMessages.size(); i++) {
+            if(eventMessages.get(i).isCounterPart(message)) {
+                index = i;
+                break;
+            }
+        }
+        return index;
     }
 
     private boolean maybeBuildRMMessage(String kafkaMessage) {
