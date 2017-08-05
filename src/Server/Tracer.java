@@ -22,12 +22,19 @@ public class Tracer {
     private boolean isMaster = conf.getBooleanOrDefault("tracer.is-master", false);
 
     private class TracingRunnable implements Runnable {
+        int prevLogReaderNumber = -1;
+        int prevDockerMonitorNumber = -1;
         @Override
         public void run() {
             while (true) {
                 try {
-                    System.out.printf("number of LogReader: %d; number of DockerMonitor: %d\n",
-                            logReaderManager.runningContainerMap.size(), dockerMonitorManager.containerIdToDM.size());
+                    if(logReaderManager.runningContainerMap.size() != prevLogReaderNumber ||
+                            dockerMonitorManager.containerIdToDM.size() != prevDockerMonitorNumber) {
+                        prevLogReaderNumber = logReaderManager.runningContainerMap.size();
+                        prevDockerMonitorNumber = dockerMonitorManager.containerIdToDM.size();
+                        System.out.printf("number of LogReader: %d; number of DockerMonitor: %d\n",
+                                prevLogReaderNumber, prevDockerMonitorNumber);
+                    }
                     Thread.sleep(5000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();

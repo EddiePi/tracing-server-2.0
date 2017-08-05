@@ -101,19 +101,21 @@ public class KafkaToTsdbChannel {
 
                 // we separate event message to avoid tsdb contention.
                 buildEventMessage();
-                try {
-                    String message = builder.build(true);
+                if (builder.getMetrics().size() > 0) {
+                    try {
+                        String message = builder.build(true);
 
-                    // TODO: maintain the connection for performance
-                    String response = HTTPRequest.sendPost(databaseURI, message);
-                    if (!response.matches("\\s*")) {
-                        System.out.printf("Unexpected response: %s\n", response);
+                        // TODO: maintain the connection for performance
+                        String response = HTTPRequest.sendPost(databaseURI, message);
+                        if (!response.matches("\\s*")) {
+                            System.out.printf("Unexpected response: %s\n", response);
+                        }
+                        Thread.sleep(50);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-                    Thread.sleep(10);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
             }
             consumer.close(5, TimeUnit.SECONDS);

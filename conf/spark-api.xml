@@ -40,7 +40,7 @@
         </group>
         <group>
             <name>byte.transferred</name>
-            <type>stage</type>
+            <type>state</type>
             <isFinish>true</isFinish>
             <value>byte</value>
         </group>
@@ -50,7 +50,7 @@
         <dateOffset>-7200000</dateOffset>
         <group>
             <name>byte.stored</name>
-            <type>event</type>
+            <type>state</type>
             <isFinish>true</isFinish>
             <value>byte</value>
         </group>
