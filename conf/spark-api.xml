@@ -46,6 +46,17 @@
         </group>
     </rule>
     <rule>
+        <regex>.*Executor killed task.*in(?&lt;stageID&gt;stage [0-9]+\.[0-9]).*(?&lt;TID&gt;TID [0-9]+).*</regex>
+        <dateOffset>-7200000</dateOffset>
+        <group>
+            <name>task</name>
+            <type>event</type>
+            <tag>TID</tag>
+            <isFinish>true</isFinish>
+            <value>1</value>
+        </group>
+    </rule>
+    <rule>
         <regex>.*stored as (?:values|bytes) in memory.*estimated size (?&lt;byte&gt;[0-9]+\.[0-9]+.*),.*</regex>
         <dateOffset>-7200000</dateOffset>
         <group>
