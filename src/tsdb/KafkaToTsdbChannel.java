@@ -33,7 +33,7 @@ public class KafkaToTsdbChannel {
 
     LogAPICollector collector = LogAPICollector.getInstance();
 
-    Map<String, PackedMessage> eventMessagesMap;
+    Map<String, List<PackedMessage>> eventMessagesMap;
 
     public KafkaToTsdbChannel() {
         eventMessagesMap = new HashMap<>();
@@ -349,10 +349,13 @@ public class KafkaToTsdbChannel {
     private void updateEventMessage(PackedMessage message) {
         int index = hasEventMessage(message);
         synchronized (this.eventMessagesMap) {
+            List<PackedMessage> packedMessageList;
             if (index < 0 && !message.isFinish) {
-                eventMessagesMap.put(message.containerId, message);
+                packedMessageList = new ArrayList<>();
+                packedMessageList.add(message);
+                eventMessagesMap.put(message.containerId, packedMessageList);
             } else if (index >= 0 && message.isFinish) {
-                eventMessagesMap.remove(index);
+                eventMessagesMap.get(message.containerId).remove(index);
             }
         }
     }
@@ -371,12 +374,15 @@ public class KafkaToTsdbChannel {
      */
     private int hasEventMessage(PackedMessage message) {
         int index = -1;
-        for(int i = 0; i < eventMessagesMap.size(); i++) {
-            if(eventMessagesMap.get(i).isCounterPart(message)) {
-                index = i;
-                break;
-            }
+        List<PackedMessage> packedMessagesInContainer;
+        if ((packedMessagesInContainer = eventMessagesMap.get(message.containerId)) != null) {
+            for (int i = 0; i < packedMessagesInContainer.size(); i++)
+                if (packedMessagesInContainer.get(i).isCounterPart(message)) {
+                    index = i;
+                    break;
+                }
         }
+
         return index;
     }
 
