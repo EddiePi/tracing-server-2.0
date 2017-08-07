@@ -330,17 +330,19 @@ public class KafkaToTsdbChannel {
     private void buildEventMessage() {
         Long timestamp = System.currentTimeMillis();
         synchronized (this.eventMessagesMap) {
-            for(PackedMessage m: eventMessagesMap.values()) {
-                if(m.containerId.equals("")) {
-                    builder.addMetric(m.name)
-                            .setDataPoint(timestamp, m.doubleValue)
-                            .addTags(m.tagMap);
-                } else {
-                    builder.addMetric(m.name)
-                            .setDataPoint(timestamp, m.doubleValue)
-                            .addTags(m.tagMap)
-                            .addTag("container", parseShortContainerId(m.containerId))
-                            .addTag("app", containerIdToAppId(m.containerId));
+            for(List<PackedMessage> mList: eventMessagesMap.values()) {
+                for(PackedMessage m: mList) {
+                    if (m.containerId.equals("")) {
+                        builder.addMetric(m.name)
+                                .setDataPoint(timestamp, m.doubleValue)
+                                .addTags(m.tagMap);
+                    } else {
+                        builder.addMetric(m.name)
+                                .setDataPoint(timestamp, m.doubleValue)
+                                .addTags(m.tagMap)
+                                .addTag("container", parseShortContainerId(m.containerId))
+                                .addTag("app", containerIdToAppId(m.containerId));
+                    }
                 }
             }
         }
