@@ -72,6 +72,7 @@ public class KafkaToTsdbChannel {
                     String value = record.value();
                     if (value.matches("container.* is finished.")) {
                         removeEventMessage(value.split(" ")[0]);
+                        continue;
                     }
                     if (key.matches("container.*-metric")) {
                         hasMessage = hasMessage | metricTransformer(value);
