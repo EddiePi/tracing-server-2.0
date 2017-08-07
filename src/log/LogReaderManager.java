@@ -107,6 +107,7 @@ public class LogReaderManager {
 
         @Override
         public void run() {
+            System.out.printf("start %s log reader.\n", kafkaKey);
             while(isReading) {
                 try {
                     if (!managerLogFile.exists()) {
@@ -147,7 +148,9 @@ public class LogReaderManager {
         public void destroy() throws IOException {
             isReading = false;
             logSender.close();
-            bufferedReader.close();
+            if (bufferedReader != null) {
+                bufferedReader.close();
+            }
         }
     }
 
@@ -191,7 +194,7 @@ public class LogReaderManager {
 
     public void start() {
         checkingThread.start();
-        //nodeManagerReadThread.start();
+        nodeManagerReadThread.start();
         if (isMaster) {
             resourceManagerReadThread.start();
         }

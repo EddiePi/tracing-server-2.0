@@ -396,7 +396,7 @@ public class KafkaToTsdbChannel {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
-                System.out.printf("matched manager log: %s\n", logMessage);
+                //System.out.printf("matched manager log: %s\n", logMessage);
                 for(MessageMark.Group group: messageMark.groups) {
                     try {
                         String name = group.name;
