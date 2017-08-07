@@ -33,10 +33,10 @@ public class KafkaToTsdbChannel {
 
     LogAPICollector collector = LogAPICollector.getInstance();
 
-    List<PackedMessage> eventMessages;
+    Map<String, PackedMessage> eventMessagesMap;
 
     public KafkaToTsdbChannel() {
-        eventMessages = new LinkedList<>();
+        eventMessagesMap = new HashMap<>();
         props = new Properties();
         props.put("bootstrap.servers", conf.getStringOrDefault("tracer.kafka.bootstrap.servers", "localhost:9092"));
         props.put("group.id", "trace");
@@ -70,6 +70,9 @@ public class KafkaToTsdbChannel {
                 for (ConsumerRecord<String, String> record : records) {
                     String key = record.key();
                     String value = record.value();
+                    if (value.matches("container.* is finished.")) {
+                        removeEventMessage(value.split(" ")[0]);
+                    }
                     if (key.matches("container.*-metric")) {
                         hasMessage = hasMessage | metricTransformer(value);
                     } else if (key.matches("container.*-log")) {
@@ -128,7 +131,7 @@ public class KafkaToTsdbChannel {
 
     public void stop() {
         transferRunnable.isRunning = false;
-        eventMessages.clear();
+        eventMessagesMap.clear();
     }
 
     private boolean metricTransformer(String metricStr) {
@@ -326,8 +329,8 @@ public class KafkaToTsdbChannel {
 
     private void buildEventMessage() {
         Long timestamp = System.currentTimeMillis();
-        synchronized (this.eventMessages) {
-            for(PackedMessage m: eventMessages) {
+        synchronized (this.eventMessagesMap) {
+            for(PackedMessage m: eventMessagesMap.values()) {
                 if(m.containerId.equals("")) {
                     builder.addMetric(m.name)
                             .setDataPoint(timestamp, m.doubleValue)
@@ -345,25 +348,31 @@ public class KafkaToTsdbChannel {
 
     private void updateEventMessage(PackedMessage message) {
         int index = hasEventMessage(message);
-        synchronized (this.eventMessages) {
+        synchronized (this.eventMessagesMap) {
             if (index < 0 && !message.isFinish) {
-                eventMessages.add(message);
+                eventMessagesMap.put(message.containerId, message);
             } else if (index >= 0 && message.isFinish) {
-                eventMessages.remove(index);
+                eventMessagesMap.remove(index);
             }
         }
     }
 
+    private void removeEventMessage(String key) {
+        synchronized (this.eventMessagesMap) {
+            eventMessagesMap.remove(key);
+        }
+    }
+
     /**
-     * check if we already record the event message in <code>eventMessages</code>
+     * check if we already record the event message in <code>eventMessagesMap</code>
      *
      * @param message
      * @return if we find the message, return the index; otherwise return -1
      */
     private int hasEventMessage(PackedMessage message) {
         int index = -1;
-        for(int i = 0; i < eventMessages.size(); i++) {
-            if(eventMessages.get(i).isCounterPart(message)) {
+        for(int i = 0; i < eventMessagesMap.size(); i++) {
+            if(eventMessagesMap.get(i).isCounterPart(message)) {
                 index = i;
                 break;
             }

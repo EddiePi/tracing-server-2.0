@@ -26,6 +26,7 @@ public class ContainerLogReader {
     volatile Boolean isChecking = true;
     String containerId;
     Thread checkingThread;
+    KafkaLogSender logSender;
     LogAPICollector collector = LogAPICollector.getInstance();
 
     public int timeoutCount;
@@ -70,10 +71,11 @@ public class ContainerLogReader {
         List<String> messageBuffer = new ArrayList<>();
         BufferedReader bufferedReader = null;
         Boolean isReading = true;
-        KafkaLogSender logSender = new KafkaLogSender(containerId);
+
 
         public FileReadRunnable(String path) {
             this.filePath = path;
+            logSender = new KafkaLogSender(containerId);
         }
 
         @Override
@@ -114,7 +116,6 @@ public class ContainerLogReader {
 
         public void destroy() throws IOException {
             isReading = false;
-            logSender.close();
             bufferedReader.close();
         }
     }
@@ -137,6 +138,8 @@ public class ContainerLogReader {
                 runnable.destroy();
             }
             fileReadingThreadPool.awaitTermination(2, TimeUnit.SECONDS);
+            logSender.send(containerId + " is finished.");
+            logSender.close();
             System.out.print("all log readers of container: " + containerDir.getAbsolutePath() + " are stopped.\n");
         } catch (InterruptedException e) {
             e.printStackTrace();

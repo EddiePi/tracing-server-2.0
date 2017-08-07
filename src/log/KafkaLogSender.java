@@ -6,6 +6,7 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Eddie on 2017/6/8.
@@ -40,6 +41,6 @@ public class KafkaLogSender {
     }
 
     public void close() {
-        producer.close();
+        producer.close(10, TimeUnit.SECONDS);
     }
 }
