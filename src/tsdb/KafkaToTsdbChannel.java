@@ -70,7 +70,7 @@ public class KafkaToTsdbChannel {
                 for (ConsumerRecord<String, String> record : records) {
                     String key = record.key();
                     String value = record.value();
-                    if (value.matches("container.* is finished.")) {
+                    if (value.matches("container.* is finished\\.")) {
                         removeEventMessage(value.split(" ")[0]);
                         continue;
                     }
