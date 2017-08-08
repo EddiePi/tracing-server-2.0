@@ -205,7 +205,6 @@ public class LogReaderManager {
                 runningContainerMap.remove(containerId);
         if(logReaderToRemove != null) {
             logReaderToRemove.stop();
-            newAppList.remove(containerIdToAppId(containerId));
         }
     }
 
