@@ -354,7 +354,7 @@ public class KafkaToTsdbChannel {
         synchronized (this.eventMessagesMap) {
             List<PackedMessage> packedMessageList;
             if (index < 0 && !message.isFinish) {
-                packedMessageList = new ArrayList<>();
+                packedMessageList = eventMessagesMap.getOrDefault(message.containerId, new ArrayList<>());
                 packedMessageList.add(message);
                 eventMessagesMap.put(message.containerId, packedMessageList);
             } else if (index >= 0 && message.isFinish) {
