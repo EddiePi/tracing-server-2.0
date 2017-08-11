@@ -246,6 +246,7 @@ public class KafkaToTsdbChannel {
                         if(type.equals("state")) {
                             packedMessagesList.add(packedMessage);
                         } else {
+                            packedMessage.isFinish = group.isFinish;
                             updateEventMessage(packedMessage);
                         }
                     } catch (IllegalStateException e) {
