@@ -55,4 +55,18 @@ public class StateCollection {
             put("KILLED", 11);
         }
     };
+
+    public static final HashMap<String, Integer> RMContainerState = new HashMap<String, Integer>() {
+        {
+            put("NEW", 1);
+            put("RESERVED", 2);
+            put("ALLOCATED", 3);
+            put("ACQUIRED", 4);
+            put("RUNNING", 5);
+            put("COMPLETED", 6);
+            put("EXPIRED", 7);
+            put("RELEASED", 8);
+            put("KILLED", 9);
+        }
+    };
 }

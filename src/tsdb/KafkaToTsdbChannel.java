@@ -203,7 +203,7 @@ public class KafkaToTsdbChannel {
         if(packedMessageList.size() == 0) {
             return false;
         }
-        buildPackedMessate(packedMessageList);
+        buildPackedMessage(packedMessageList);
         return true;
     }
 
@@ -269,7 +269,7 @@ public class KafkaToTsdbChannel {
         if(packedMessageList.size() == 0) {
             return false;
         }
-        buildPackedMessate(packedMessageList);
+        buildPackedMessage(packedMessageList);
         return true;
     }
 
@@ -406,7 +406,9 @@ public class KafkaToTsdbChannel {
                         Double value = null;
                         String appId = "";
                         String appAttemptId = "";
-                        if(!name.equals("app.state") && !name.equals("app.attempt.state")) {
+                        if(!name.equals("app.state") &&
+                                !name.equals("app.attempt.state") &&
+                                !name.equals("rm.container")) {
                             if (valueStr.matches("^[-+]?[\\d]*(\\.\\d*)?$")) {
                                 value = Double.valueOf(valueStr);
                             } else {
@@ -417,13 +419,16 @@ public class KafkaToTsdbChannel {
                         Map<String, String> tagMap = new HashMap<>();
                         for (String tagName : group.tags) {
                             String tagValue = matcher.group(tagName).replaceAll("\\s|#", "_");
-                            // if we the metric name is 'state', we must have a tag also named 'stage'.
+                            // if the metric's name is 'state', we must have a tag also named 'state'.
                             if(tagName.equals("state")) {
                                 if(name.equals("app.state")) {
                                     Integer stateIntValue = StateCollection.RMAppState.get(tagValue);
                                     value = (double) stateIntValue;
                                 } else if(name.equals("app.attempt.state")) {
                                     Integer stateIntValue = StateCollection.RMAppAttemptStateMap.get(tagValue);
+                                    value = (double) stateIntValue;
+                                } else if(name.equals("rm.container.state")) {
+                                    Integer stateIntValue = StateCollection.RMContainerState.get(tagValue);
                                     value = (double) stateIntValue;
                                 }
                             } else if (tagName.equals("app")) {
@@ -433,6 +438,11 @@ public class KafkaToTsdbChannel {
                                 appAttemptId = parseShortAppAttemptId(tagValue);
                                 tagMap.put("app", appId);
                                 tagMap.put("app.attempt", appAttemptId);
+                            } else if (tagName.equals("container")) {
+                                appId = containerIdToAppId(tagValue);
+                                String shortContainerId = parseShortContainerId(tagValue);
+                                tagMap.put("app", appId);
+                                tagMap.put("container", shortContainerId);
                             }
                         }
                         builder.addMetric(name)
@@ -450,7 +460,7 @@ public class KafkaToTsdbChannel {
         return hasMessage;
     }
 
-    private void buildPackedMessate(List<PackedMessage> packedMessageList) {
+    private void buildPackedMessage(List<PackedMessage> packedMessageList) {
         for(PackedMessage packedMessage: packedMessageList) {
             String appId = containerIdToAppId(packedMessage.containerId);
             if(packedMessage.containerId.equals("")) {

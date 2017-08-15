@@ -48,4 +48,16 @@
             <value>1</value>
         </group>
     </rule>
+    <rule>
+        <regex>.*(?&lt;container&gt;container_[0-9]+_[0-9]+_[0-9]+_[0-9]+) Container Transitioned.*to (?&lt;state&gt;.*)</regex>
+        <dateOffset>0</dateOffset>
+        <group>
+            <name>rm.container.state</name>
+            <type>state</type>
+            <tag>container</tag>
+            <tag>state</tag>
+            <isFinish>false</isFinish>
+            <value>1</value>
+        </group>
+    </rule>
 </rules>
