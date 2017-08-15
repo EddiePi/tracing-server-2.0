@@ -41,6 +41,9 @@ class DockerMonitor {
     private boolean isRealDockerOn = false;
     private long monitorInterval;
 
+    private long netTransOffset = 0L;
+    private long netRecOffset = 0L;
+
     public DockerMonitor(String containerId, DockerMonitorManager dmManger) {
         this.containerId = containerId;
         this.manager = dmManger;
@@ -179,7 +182,7 @@ class DockerMonitor {
         calculateCurrentDiskRate(currentMetrics);
 
         // calculate the network rate
-        calculateCurrentNetRate(currentMetrics);
+        calculateCurrentNetMetric(currentMetrics);
 
         metricSender.send(currentMetrics);
         if(!isRunning) {
@@ -355,8 +358,10 @@ class DockerMonitor {
     }
 
     // calculate the network I/O rate(kb/s)
-    private void calculateCurrentNetRate(DockerMetrics m) {
+    private void calculateCurrentNetMetric(DockerMetrics m) {
         if(!getNetServicedBytes(m)) {
+            m.netTransBytes = 0L;
+            m.netRecBytes = 0L;
             return;
         }
         Double deltaTime = (m.timestamp - previousMetrics.timestamp) / 1000.0;
@@ -374,9 +379,9 @@ class DockerMonitor {
         if (!isRunning) {
             return false;
         }
-        boolean calRate = true;
+        boolean hasFirst = true;
         if (previousMetrics == null) {
-            calRate = false;
+            hasFirst = false;
         }
         String[] results = runShellCommand("cat " + netFilePath).split("\n");
         String resultLine = null;
@@ -387,16 +392,25 @@ class DockerMonitor {
             }
         }
 
+
+        // we get values that are in the file. but we need to subtract the first value we got.
+        // we will fix it when this method return.
         if (resultLine != null && resultLine.length() > 0) {
             resultLine = resultLine.trim();
             String receiveStr = resultLine.split("\\s+")[1];
-            m.netRecBytes = Long.parseLong(receiveStr);
+            if (netRecOffset == 0L) {
+                netRecOffset = Long.parseLong(receiveStr);
+            }
+            m.netRecBytes = Long.parseLong(receiveStr) - netRecOffset;
 
             String transmitStr = resultLine.split("\\s+")[8];
-            m.netTransBytes = Long.parseLong(transmitStr);
+            if (netTransOffset == 0L) {
+                netTransOffset = Long.parseLong(transmitStr);
+            }
+            m.netTransBytes = Long.parseLong(transmitStr) - netTransOffset;
             //System.out.print("netRec: " + m.netRecBytes + " netTrans: " + m.netTransBytes + "\n");
         }
-        return calRate;
+        return hasFirst;
     }
 
     private List<String> readFileLines(String path){
