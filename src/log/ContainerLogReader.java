@@ -27,11 +27,12 @@ public class ContainerLogReader {
     String containerId;
     Thread checkingThread;
     KafkaLogSender logSender;
-    LogAPICollector collector = LogAPICollector.getInstance();
+    List<MessageMark> containerRules;
 
     public int timeoutCount;
 
     public ContainerLogReader(String containerPath) {
+        containerRules = LogAPICollector.getInstance().containerRuleMarkList;
         this.containerDir = new File(containerPath);
         timeoutCount = 0;
 
@@ -86,11 +87,19 @@ public class ContainerLogReader {
                     Reader reader = new InputStreamReader(is, "GBK");
                     bufferedReader = new BufferedReader(reader);
                 }
+
                 while (isReading) {
                     String line;
                     messageBuffer.clear();
                     while((line = bufferedReader.readLine()) != null) {
-                        messageBuffer.add(line);
+                        for(MessageMark mm: containerRules) {
+                            Pattern pattern = Pattern.compile(mm.regex);
+                            Matcher matcher = pattern.matcher(line);
+                            if (matcher.matches()) {
+                                messageBuffer.add(line);
+                                break;
+                            }
+                        }
                     }
                     for(String message: messageBuffer) {
                         // TEST

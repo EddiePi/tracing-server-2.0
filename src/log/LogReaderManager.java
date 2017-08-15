@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by Eddie on 2017/6/6.
@@ -40,10 +42,12 @@ public class LogReaderManager {
     Map<String, Integer> newAppList;
     boolean customAPIEnabled;
     boolean isMaster;
+    List<MessageMark> managerRules;
 
     public LogReaderManager() {
         conf = TracerConf.getInstance();
         isMaster = conf.getBooleanOrDefault("tracer.is-master", false);
+        managerRules = LogAPICollector.getInstance().managerRuleMarkList;
         appRootDir = new File(conf.getStringOrDefault("tracer.log.app.root", "~/hadoop-2.7.3/logs/userlogs"));
         applicationDirs = appRootDir.listFiles();
         newAppList = new HashMap<>();
@@ -77,11 +81,11 @@ public class LogReaderManager {
             }
             resourceManagerReaderRunnable = new LogReaderRunnable("resourcemanager", resourceManagerLog);
             resourceManagerReadThread = new Thread(resourceManagerReaderRunnable);
-            registerDefaultAPI();
-            customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled", false);
-            if (customAPIEnabled) {
-                registerCustomAPI();
-            }
+        }
+        registerDefaultAPI();
+        customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled", false);
+        if (customAPIEnabled) {
+            registerCustomAPI();
         }
     }
 
@@ -127,8 +131,14 @@ public class LogReaderManager {
                         isNavigating = false;
                     }
                     while ((line = bufferedReader.readLine()) != null) {
-
-                        messageBuffer.add(line);
+                        for(MessageMark mm: managerRules) {
+                            Pattern pattern = Pattern.compile(mm.regex);
+                            Matcher matcher = pattern.matcher(line);
+                            if (matcher.matches()) {
+                                messageBuffer.add(line);
+                                break;
+                            }
+                        }
                     }
                     for (String message : messageBuffer) {
                         logSender.send(message);
