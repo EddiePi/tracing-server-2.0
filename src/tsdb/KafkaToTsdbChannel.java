@@ -33,7 +33,7 @@ public class KafkaToTsdbChannel {
 
     LogAPICollector collector = LogAPICollector.getInstance();
 
-    Map<String, List<PackedMessage>> eventMessagesMap;
+    final Map<String, List<PackedMessage>> eventMessagesMap;
 
     public KafkaToTsdbChannel() {
         eventMessagesMap = new HashMap<>();
@@ -249,6 +249,8 @@ public class KafkaToTsdbChannel {
                             packedMessage.isFinish = group.isFinish;
                             updateEventMessage(packedMessage);
                         }
+                        // TEST
+                        // System.out.printf("packed message: %s\n", packedMessage);
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
                     } catch (IllegalArgumentException e) {

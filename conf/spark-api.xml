@@ -1,6 +1,6 @@
 <rules>
     <rule>
-        <regex>.*Running task.* in (?&lt;stageID&gt;stage [0-9]+\.[0-9]).*(?&lt;TID&gt;TID [0-9]+).*</regex>
+        <regex>.*Running task.* in stage (?&lt;stageID&gt;[0-9]+\.[0-9]).*(?&lt;TID&gt;TID [0-9]+).*</regex>
         <dateOffset>-7200000</dateOffset>
         <group>
             <!-- required -->
@@ -9,7 +9,7 @@
             <tag>stageID</tag>
             <!-- optional, default: false -->
             <isFinish>false</isFinish>
-            <value>1</value>
+            <value>stageID</value>
         </group>
         <group>
             <name>task</name>
