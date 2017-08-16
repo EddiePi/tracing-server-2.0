@@ -35,8 +35,13 @@ public class KafkaToTsdbChannel {
 
     final Map<String, List<PackedMessage>> eventMessagesMap;
 
+    // if a event lasts less than 1s, it might be cleared before gets sent.
+    // we use this list to store this kind of message
+    final List<PackedMessage> shortEventMessageList;
+
     public KafkaToTsdbChannel() {
         eventMessagesMap = new HashMap<>();
+        shortEventMessageList = new LinkedList<>();
         props = new Properties();
         props.put("bootstrap.servers", conf.getStringOrDefault("tracer.kafka.bootstrap.servers", "localhost:9092"));
         props.put("group.id", "trace");
@@ -336,6 +341,7 @@ public class KafkaToTsdbChannel {
         synchronized (this.eventMessagesMap) {
             for(List<PackedMessage> mList: eventMessagesMap.values()) {
                 for(PackedMessage m: mList) {
+                    m.firstSend = false;
                     if (m.containerId.equals("")) {
                         builder.addMetric(m.name)
                                 .setDataPoint(timestamp, m.doubleValue)
@@ -350,6 +356,22 @@ public class KafkaToTsdbChannel {
                 }
             }
         }
+        synchronized (this.shortEventMessageList) {
+            for(PackedMessage m: shortEventMessageList) {
+                if (m.containerId.equals("")) {
+                    builder.addMetric(m.name)
+                            .setDataPoint(timestamp, m.doubleValue)
+                            .addTags(m.tagMap);
+                } else {
+                    builder.addMetric(m.name)
+                            .setDataPoint(timestamp, m.doubleValue)
+                            .addTags(m.tagMap)
+                            .addTag("container", parseShortContainerId(m.containerId))
+                            .addTag("app", containerIdToAppId(m.containerId));
+                }
+            }
+            shortEventMessageList.clear();
+        }
     }
 
     private void updateEventMessage(PackedMessage message) {
@@ -361,7 +383,14 @@ public class KafkaToTsdbChannel {
                 packedMessageList.add(message);
                 eventMessagesMap.put(message.containerId, packedMessageList);
             } else if (index >= 0 && message.isFinish) {
-                eventMessagesMap.get(message.containerId).remove(index);
+                PackedMessage oldMessage =
+                    eventMessagesMap.get(message.containerId).remove(index);
+                if (message.timestamp - oldMessage.timestamp < 1L &&
+                        oldMessage.firstSend) {
+                    synchronized (this.shortEventMessageList) {
+                        shortEventMessageList.add(oldMessage);
+                    }
+                }
             }
         }
     }

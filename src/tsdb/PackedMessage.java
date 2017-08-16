@@ -17,6 +17,7 @@ public class PackedMessage implements Serializable {
     public Double doubleValue;
     public MessageType type;
     public boolean isFinish = false;
+    public boolean firstSend = true;
 
     public PackedMessage(String containerId,
                          Long timeStamp,

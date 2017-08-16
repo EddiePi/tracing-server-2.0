@@ -1,6 +1,6 @@
 <rules>
     <rule>
-        <regex>.*Running task.* in stage (?&lt;stageID&gt;[0-9]+\.[0-9]).*(?&lt;TID&gt;TID [0-9]+).*</regex>
+        <regex>.*Running task.* in stage (?&lt;stageID&gt;[0-9]+\.[0-9]).*TID (?&lt;TID&gt;[0-9]+).*</regex>
         <dateOffset>-7200000</dateOffset>
         <group>
             <!-- required -->
@@ -64,6 +64,37 @@
             <type>state</type>
             <isFinish>true</isFinish>
             <value>byte</value>
+        </group>
+    </rule>
+    <rule>
+        <regex>.*Task (?&lt;TID&gt;[0-9]+)/s/ force spilling in-memory map ot disk.*(?&lt;byte&gt;[0-9]+\.[0-9]+.*) memory</regex>
+        <dateOffset>-7200000</dateOffset>
+        <group>
+            <name>byte.spill</name>
+            <type>state</type>
+            <tag>TID</tag>
+            <isFinish>true</isFinish>
+            <value>byte</value>
+        </group>
+    </rule>
+    <rule>
+        <regex>.*Getting.*non-empty blocks out of.*blocks</regex>
+        <dateOffset>-7200000</dateOffset>
+        <group>
+            <name>shuffle</name>
+            <type>event</type>
+            <isFinish>false</isFinish>
+            <value>1.0</value>
+        </group>
+    </rule>
+    <rule>
+        <regex>.*Started.*remote fetches in.*</regex>
+        <dateOffset>-7200000</dateOffset>
+        <group>
+            <name>shuffle</name>
+            <type>event</type>
+            <isFinish>true</isFinish>
+            <value>1.0</value>
         </group>
     </rule>
 </rules>
