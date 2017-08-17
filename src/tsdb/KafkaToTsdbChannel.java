@@ -351,7 +351,7 @@ public class KafkaToTsdbChannel {
                                 .setDataPoint(timestamp, m.doubleValue)
                                 .addTags(m.tagMap)
                                 .addTag("container", parseShortContainerId(m.containerId))
-                                .addTag("app", containerIdToAppId(m.containerId));
+                                .addTag("app", containerIdToShortAppId(m.containerId));
                     }
                 }
             }
@@ -367,7 +367,7 @@ public class KafkaToTsdbChannel {
                             .setDataPoint(timestamp, m.doubleValue)
                             .addTags(m.tagMap)
                             .addTag("container", parseShortContainerId(m.containerId))
-                            .addTag("app", containerIdToAppId(m.containerId));
+                            .addTag("app", containerIdToShortAppId(m.containerId));
                 }
             }
             shortEventMessageList.clear();
@@ -465,12 +465,12 @@ public class KafkaToTsdbChannel {
                             } else if (tagName.equals("app")) {
                                 tagMap.put("app", tagValue);
                             } else if(tagName.equals("appAttempt")) {
-                                appId = appAttemptIdToAppId(tagValue);
+                                appId = appAttemptIdToShortAppId(tagValue);
                                 appAttemptId = parseShortAppAttemptId(tagValue);
                                 tagMap.put("app", appId);
                                 tagMap.put("app.attempt", appAttemptId);
                             } else if (tagName.equals("container")) {
-                                appId = containerIdToAppId(tagValue);
+                                appId = containerIdToShortAppId(tagValue);
                                 String shortContainerId = parseShortContainerId(tagValue);
                                 tagMap.put("app", appId);
                                 tagMap.put("container", shortContainerId);
@@ -493,7 +493,7 @@ public class KafkaToTsdbChannel {
 
     private void buildPackedMessage(List<PackedMessage> packedMessageList) {
         for(PackedMessage packedMessage: packedMessageList) {
-            String appId = containerIdToAppId(packedMessage.containerId);
+            String appId = containerIdToShortAppId(packedMessage.containerId);
             if(packedMessage.containerId.equals("")) {
                 builder.addMetric(packedMessage.name)
                         .setDataPoint(packedMessage.timestamp, packedMessage.doubleValue)
@@ -510,7 +510,7 @@ public class KafkaToTsdbChannel {
 
     private Map<String, String> buildAllTags(String[] metrics) {
         String containerId = metrics[0];
-        String appId = containerIdToAppId(containerId);
+        String appId = containerIdToShortAppId(containerId);
         Map<String, String> tagMap = new HashMap<>();
         tagMap.put("app", appId);
         tagMap.put("container", parseShortContainerId(containerId));
@@ -556,9 +556,9 @@ public class KafkaToTsdbChannel {
         return shortId;
     }
 
-    private String containerIdToAppId(String containerId) {
+    private String containerIdToShortAppId(String containerId) {
         String[] parts = containerId.split("_");
-        String appId = "application_" + parts[parts.length - 4] + "_" + parts[parts.length - 3];
+        String appId = parts[parts.length - 4] + "_" + parts[parts.length - 3];
         return appId;
     }
 
@@ -568,9 +568,9 @@ public class KafkaToTsdbChannel {
         return shortId;
     }
 
-    private String appAttemptIdToAppId(String appAttemptId) {
+    private String appAttemptIdToShortAppId(String appAttemptId) {
         String[] parts = appAttemptId.split("_");
-        String appId = "application_" + parts[parts.length - 3] + "_" + parts[parts.length - 2];
+        String appId = parts[parts.length - 3] + "_" + parts[parts.length - 2];
         return appId;
     }
 }
