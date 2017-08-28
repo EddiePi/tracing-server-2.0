@@ -454,12 +454,24 @@ public class KafkaToTsdbChannel {
                             if(tagName.equals("state")) {
                                 if(name.equals("app.state")) {
                                     Integer stateIntValue = StateCollection.RMAppState.get(tagValue);
+                                    if (stateIntValue == null) {
+                                        System.out.printf("unrecognized app state:%s\n", tagValue);
+                                        continue;
+                                    }
                                     value = (double) stateIntValue;
                                 } else if(name.equals("app.attempt.state")) {
                                     Integer stateIntValue = StateCollection.RMAppAttemptStateMap.get(tagValue);
+                                    if (stateIntValue == null) {
+                                        System.out.printf("unrecognized appattemp state:%s\n", tagValue);
+                                        continue;
+                                    }
                                     value = (double) stateIntValue;
                                 } else if(name.equals("rm.container.state")) {
                                     Integer stateIntValue = StateCollection.RMContainerState.get(tagValue);
+                                    if (stateIntValue == null) {
+                                        System.out.printf("unrecognized container state:%s\n", tagValue);
+                                        continue;
+                                    }
                                     value = (double) stateIntValue;
                                 }
                             } else if (tagName.equals("app")) {
