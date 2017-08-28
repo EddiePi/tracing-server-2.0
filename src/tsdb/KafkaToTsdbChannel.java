@@ -314,6 +314,10 @@ public class KafkaToTsdbChannel {
                             // if we the metric name is 'state', we must have a tag also named 'stage'.
                             if(name.equals("state") && tagName.equals("state")) {
                                 Integer stateIntValue = StateCollection.containerStateMap.get(tagValue);
+                                if (stateIntValue == null) {
+                                    System.out.printf("unrecognized container state:%s\n", tagValue);
+                                    continue;
+                                }
                                 value = (double)stateIntValue;
                             }
                         }
