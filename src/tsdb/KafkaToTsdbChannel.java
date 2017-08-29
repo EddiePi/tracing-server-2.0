@@ -75,6 +75,7 @@ public class KafkaToTsdbChannel {
                 for (ConsumerRecord<String, String> record : records) {
                     String key = record.key();
                     String value = record.value();
+                    System.out.printf("receive kafka message:%s\n", value);
                     if (value.matches("container.* is finished\\.")) {
                         removeEventMessage(value.split(" ")[0]);
                         continue;
