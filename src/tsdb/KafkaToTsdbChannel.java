@@ -321,13 +321,15 @@ public class KafkaToTsdbChannel {
                                 value = (double)stateIntValue;
                             }
                         }
-                        PackedMessage packedMessage =
-                                new PackedMessage(containerId, timestamp, name, tagMap, value == null ? 1d : value, type);
-                        if(type.equals("state")) {
-                            packedMessagesList.add(packedMessage);
-                        } else {
-                            packedMessage.isFinish = group.isFinish;
-                            updateEventMessage(packedMessage);
+                        if (value != null) {
+                            PackedMessage packedMessage =
+                                    new PackedMessage(containerId, timestamp, name, tagMap, value == null ? 1d : value, type);
+                            if (type.equals("state")) {
+                                packedMessagesList.add(packedMessage);
+                            } else {
+                                packedMessage.isFinish = group.isFinish;
+                                updateEventMessage(packedMessage);
+                            }
                         }
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
@@ -492,10 +494,12 @@ public class KafkaToTsdbChannel {
                                 tagMap.put("container", shortContainerId);
                             }
                         }
-                        builder.addMetric(name)
-                                .setDataPoint(timestamp, value)
-                                .addTags(tagMap);
-                        hasMessage = true;
+                        if (value != null) {
+                            builder.addMetric(name)
+                                    .setDataPoint(timestamp, value)
+                                    .addTags(tagMap);
+                            hasMessage = true;
+                        }
                     } catch (IllegalStateException e) {
                         e.printStackTrace();
                     } catch (IllegalArgumentException e) {
