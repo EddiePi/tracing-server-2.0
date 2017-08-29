@@ -52,7 +52,7 @@ public class KafkaToTsdbChannel {
         consumer = new KafkaConsumer<>(props);
         kafkaTopics = Arrays.asList("trace", "log");
         consumer.subscribe(kafkaTopics);
-        databaseURI = conf.getStringOrDefault("tracer.tasb.server", "localhost:4242");
+        databaseURI = conf.getStringOrDefault("tracer.tsdb.server", "localhost:4242");
         if(!databaseURI.matches("http://.*")) {
             databaseURI = "http://" + databaseURI;
         }
