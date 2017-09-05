@@ -65,7 +65,7 @@
         </group>
     </rule>
     <rule>
-        <regex>.*Task (?&lt;TID&gt;[0-9]+)/s/ force spilling in-memory map ot disk.*(?&lt;byte&gt;[0-9]+\.[0-9]+.*) memory</regex>
+        <regex>.*Task (?&lt;TID&gt;[0-9]+) force spilling in-memory map ot disk.*(?&lt;byte&gt;[0-9]+\.[0-9]+.*) memory</regex>
         <dateOffset>-7200000</dateOffset>
         <group>
             <name>byte.spill</name>
