@@ -1,6 +1,7 @@
 package Server;
 
 import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.PropertyConfigurator;
 
 
 /**
@@ -8,6 +9,7 @@ import org.apache.log4j.BasicConfigurator;
  */
 public class TracingMaster {
     public static void main(String argv[]) throws Exception {
+        PropertyConfigurator.configure("tools-log4j.properties");
         BasicConfigurator.configure();
         Tracer tracer = Tracer.getInstance();
         tracer.init();

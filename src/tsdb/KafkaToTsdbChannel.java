@@ -75,7 +75,6 @@ public class KafkaToTsdbChannel {
                 for (ConsumerRecord<String, String> record : records) {
                     String key = record.key();
                     String value = record.value();
-                    System.out.printf("receive kafka message:%s\n", value);
                     if (value.matches("container.* is finished\\.")) {
                         removeEventMessage(value.split(" ")[0]);
                         continue;
@@ -288,6 +287,9 @@ public class KafkaToTsdbChannel {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
+                if(logMessage.matches(".*spilling in-memory map of.*to disk.*")) {
+                    System.out.printf("spilling message:%s\n", logMessage);
+                }
                 for(MessageMark.Group group: messageMark.groups) {
                     try {
                         String name = group.name;
@@ -312,7 +314,7 @@ public class KafkaToTsdbChannel {
                             } else if (!tagName.equals("state")) {
                                 tagMap.put(tagName, tagValue);
                             }
-                            // if we the metric name is 'state', we must have a tag also named 'stage'.
+                            // if we the metric name is 'state', we must have a tag also named 'state'.
                             if(name.equals("state") && tagName.equals("state")) {
                                 Integer stateIntValue = StateCollection.containerStateMap.get(tagValue);
                                 if (stateIntValue == null) {
@@ -321,6 +323,9 @@ public class KafkaToTsdbChannel {
                                 }
                                 value = (double)stateIntValue;
                             }
+                        }
+                        if(logMessage.matches(".*spilling in-memory map of.*to disk.*")) {
+                            System.out.printf("name:%s, value:%f", name, value);
                         }
                         if (value != null) {
                             PackedMessage packedMessage =
