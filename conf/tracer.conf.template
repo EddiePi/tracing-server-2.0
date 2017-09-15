@@ -11,3 +11,5 @@ tracer.log.custom-api.enabled   false
 tracer.log.custom-api.path      ./custom.api
 
 tracer.tsdb.server              localhost:4242
+
+tracer.system-monitor.enabled   true

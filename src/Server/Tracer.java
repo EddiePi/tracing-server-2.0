@@ -1,5 +1,6 @@
 package Server;
 
+import Utils.SystemMetricMonitor;
 import docker.DockerMonitorManager;
 import log.LogReaderManager;
 import tsdb.TSManager;
@@ -16,11 +17,13 @@ public class Tracer {
 
     private TSManager tsManager;
 
+    private SystemMetricMonitor systemMetricMonitor;
+
     private boolean isTest = false;
 
     private TracerConf  conf = TracerConf.getInstance();
     private boolean isMaster = conf.getBooleanOrDefault("tracer.is-master", false);
-
+    private boolean systemMonitorEnabled = conf.getBooleanOrDefault("tracer.system-monitor.enabled", false);
     private class TracingRunnable implements Runnable {
         int prevLogReaderNumber = -1;
         int prevDockerMonitorNumber = -1;
@@ -49,7 +52,13 @@ public class Tracer {
     Thread tThread = new Thread(runnable);
 
     private static final Tracer instance = new Tracer();
-    private Tracer() {}
+    private Tracer() {
+
+        if (systemMonitorEnabled) {
+            systemMetricMonitor = new SystemMetricMonitor();
+            systemMetricMonitor.start();
+        }
+    }
 
     public static Tracer getInstance() {
         return instance;
@@ -94,6 +103,9 @@ public class Tracer {
         dockerMonitorManager.stop();
         if(isMaster) {
             tsManager.stop();
+        }
+        if (systemMonitorEnabled) {
+            systemMetricMonitor.stop();
         }
     }
 }
