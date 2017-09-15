@@ -103,7 +103,7 @@ public class ContainerLogReader {
                     }
                     for(String message: messageBuffer) {
                         // TEST
-                        System.out.printf("sending container log: %s\n", message);
+                        //System.out.printf("sending container log: %s\n", message);
                         logSender.send(containerId + " " + message);
                     }
                     Thread.sleep(200);

@@ -119,7 +119,7 @@ public class KafkaToTsdbChannel {
                         if (!response.matches("\\s*")) {
                             System.out.printf("Unexpected response: %s\n", response);
                         }
-                        Thread.sleep(50);
+                        Thread.sleep(10);
                     } catch (IOException e) {
                         e.printStackTrace();
                     } catch (InterruptedException e) {
@@ -287,9 +287,6 @@ public class KafkaToTsdbChannel {
             Pattern pattern = Pattern.compile(messageMark.regex);
             Matcher matcher = pattern.matcher(logMessage);
             if(matcher.matches()) {
-                if(logMessage.matches(".*spilling in-memory map of.*to disk.*")) {
-                    System.out.printf("spilling message:%s\n", logMessage);
-                }
                 for(MessageMark.Group group: messageMark.groups) {
                     try {
                         String name = group.name;
@@ -323,9 +320,6 @@ public class KafkaToTsdbChannel {
                                 }
                                 value = (double)stateIntValue;
                             }
-                        }
-                        if(logMessage.matches(".*spilling in-memory map of.*to disk.*")) {
-                            System.out.printf("name:%s, value:%f", name, value);
                         }
                         if (value != null) {
                             PackedMessage packedMessage =
@@ -368,6 +362,7 @@ public class KafkaToTsdbChannel {
                 }
             }
         }
+
         synchronized (this.shortEventMessageList) {
             for(PackedMessage m: shortEventMessageList) {
                 if (m.containerId.equals("")) {
@@ -397,8 +392,7 @@ public class KafkaToTsdbChannel {
             } else if (index >= 0 && message.isFinish) {
                 PackedMessage oldMessage =
                     eventMessagesMap.get(message.containerId).remove(index);
-                if (message.timestamp - oldMessage.timestamp < 1L &&
-                        oldMessage.firstSend) {
+                if (oldMessage.firstSend) {
                     synchronized (this.shortEventMessageList) {
                         shortEventMessageList.add(oldMessage);
                     }
