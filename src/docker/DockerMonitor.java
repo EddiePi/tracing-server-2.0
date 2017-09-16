@@ -316,6 +316,11 @@ class DockerMonitor {
             }
         }
 
+        String waitTimeStr = readDiskFileFormat(blkioPath + "blkio.io_wait_time");
+        if (waitTimeStr != null) {
+            m.diskWaitTime = Long.parseLong(waitTimeStr);
+        }
+
         String serviceTimeStr = readDiskFileFormat(blkioPath + "blkio.io_service_time");
         if (serviceTimeStr != null) {
             m.diskServiceTime = Long.parseLong(serviceTimeStr);

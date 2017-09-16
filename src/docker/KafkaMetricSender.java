@@ -49,7 +49,7 @@ public class KafkaMetricSender {
                 dm.memoryUsage.toString() + "," +
                 dm.diskServiceBytes.toString() + "," +
                 dm.diskServiceTime.toString() + "," +
-                dm.diskQueued.toString() + "," +
+                dm.diskWaitTime.toString() + "," +
                 dm.diskIOTime.toString() + "," +
                 dm.netRecBytes.toString() + "," +
                 dm.netTransBytes.toString();

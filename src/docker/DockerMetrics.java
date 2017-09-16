@@ -35,6 +35,7 @@ public class DockerMetrics {
     public Long diskServiceTime = 0L;
     public Long diskQueued = 0L;
     public Long diskIOTime = 0L;
+    public Long diskWaitTime = 0L;
     public Double diskRate = 0.0;
 
     // network taskMetrics

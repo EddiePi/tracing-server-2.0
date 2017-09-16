@@ -152,7 +152,7 @@ public class KafkaToTsdbChannel {
             Long memoryUsage = Long.valueOf(metrics[3]);
             Long diskServiceByte = Long.valueOf(metrics[4]);
             Long diskServiceTime = Long.valueOf(metrics[5]);
-            Long diskQueued = Long.valueOf(metrics[6]);
+            Long diskWaitTime = Long.valueOf(metrics[6]);
             Long diskIOTime = Long.valueOf(metrics[7]);
             Double netRate = Double.valueOf(metrics[8]) + Double.valueOf(metrics[9]);
             Map<String, String> tagMap = buildAllTags(metrics);
@@ -175,8 +175,8 @@ public class KafkaToTsdbChannel {
                     .setDataPoint(timestamp, diskServiceTime)
                     .addTags(tagMap);
 
-            builder.addMetric("disk.queued")
-                    .setDataPoint(timestamp, diskQueued)
+            builder.addMetric("disk.wait.time")
+                    .setDataPoint(timestamp, diskWaitTime)
                     .addTags(tagMap);
 
             builder.addMetric("diskIOTime")
