@@ -178,6 +178,8 @@ public class LogReaderManager {
                         // The file name is also the containerId.
                         String name = file.getName();
                         if(name.contains("application")) {
+                            // Test
+                            System.out.printf("new app: %s\n", name);
                             newAppList.put(name, 1);
                         }
                         if(name.contains("container")) {
