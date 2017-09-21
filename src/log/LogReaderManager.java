@@ -28,15 +28,18 @@ public class LogReaderManager {
     File[] applicationDirs;
     File nodeManagerLog;
     File resourceManagerLog;
+    File testLog;
     Tracer tracer = Tracer.getInstance();
     // Key is the container's id.
     public ConcurrentMap<String, ContainerLogReader> runningContainerMap = new ConcurrentHashMap<>();
     LogReaderRunnable nodeManagerReaderRunnable;
     LogReaderRunnable resourceManagerReaderRunnable;
+    LogReaderRunnable testReaderRunnable;
     CheckAppDirRunnable checkingRunnable;
     Thread checkingThread;
     Thread nodeManagerReadThread;
     Thread resourceManagerReadThread;
+    Thread testReaderThread;
     ContainerStateRecorder recorder = ContainerStateRecorder.getInstance();
     LogAPICollector apiCollector;
     Map<String, Integer> newAppList;
@@ -44,11 +47,14 @@ public class LogReaderManager {
     boolean isMaster;
     List<MessageMark> managerRules;
 
+    boolean testMode;
+
     public LogReaderManager() {
         conf = TracerConf.getInstance();
         isMaster = conf.getBooleanOrDefault("tracer.is-master", false);
         managerRules = LogAPICollector.getInstance().managerRuleMarkList;
         appRootDir = new File(conf.getStringOrDefault("tracer.log.app.root", "~/hadoop-2.7.3/logs/userlogs"));
+        testMode = conf.getBooleanOrDefault("tracer.log.testmode.enabled", false);
         applicationDirs = appRootDir.listFiles();
         newAppList = new HashMap<>();
         if (applicationDirs == null) {
@@ -86,6 +92,15 @@ public class LogReaderManager {
         customAPIEnabled = conf.getBooleanOrDefault("tracer.log.custom-api.enabled", false);
         if (customAPIEnabled) {
             registerCustomAPI();
+        }
+
+        if (!isMaster && testMode) {
+            testLog = new File(conf.getStringOrDefault("tracer.log.testmode.dir", "./"));
+            if(testLog.exists()) {
+                testReaderRunnable = new LogReaderRunnable("testlog", testLog);
+                testReaderThread = new Thread(testReaderRunnable);
+            }
+
         }
     }
 
@@ -131,13 +146,17 @@ public class LogReaderManager {
                         isNavigating = false;
                     }
                     while ((line = bufferedReader.readLine()) != null) {
-                        for(MessageMark mm: managerRules) {
-                            Pattern pattern = Pattern.compile(mm.regex);
-                            Matcher matcher = pattern.matcher(line);
-                            if (matcher.matches()) {
-                                messageBuffer.add(line);
-                                break;
+                        if (!kafkaKey.equals("testlog")) {
+                            for (MessageMark mm : managerRules) {
+                                Pattern pattern = Pattern.compile(mm.regex);
+                                Matcher matcher = pattern.matcher(line);
+                                if (matcher.matches()) {
+                                    messageBuffer.add(line);
+                                    break;
+                                }
                             }
+                        } else {
+                            messageBuffer.add(line);
                         }
                     }
                     for (String message : messageBuffer) {
@@ -210,6 +229,9 @@ public class LogReaderManager {
         if (isMaster) {
             resourceManagerReadThread.start();
         }
+        if (!isMaster && testMode) {
+            resourceManagerReadThread.start();
+        }
     }
 
     public void stopContainerLogReaderById(String containerId) {
@@ -227,6 +249,9 @@ public class LogReaderManager {
         }
         if(isMaster) {
             resourceManagerReaderRunnable.destroy();
+        }
+        if (!isMaster && testMode) {
+            testReaderRunnable.destroy();
         }
     }
 

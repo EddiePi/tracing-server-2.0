@@ -11,6 +11,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -77,6 +78,10 @@ public class KafkaToTsdbChannel {
                     String value = record.value();
                     if (value.matches("container.* is finished\\.")) {
                         removeEventMessage(value.split(" ")[0]);
+                        continue;
+                    }
+                    if (key.matches("testlog")) {
+                        sendTestMessage(value);
                         continue;
                     }
                     if (key.matches("container.*-metric")) {
@@ -544,6 +549,27 @@ public class KafkaToTsdbChannel {
             }
         }
         return tagMap;
+    }
+
+    private void sendTestMessage(String line) {
+        Long time = Long.parseLong(line);
+        Date logDate = new Date(time);
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        String logDateStr = format.format(logDate);
+        String curDateStr = format.format(new Date());
+        System.out.printf("log time: %s, cur time: %s\n", logDateStr, curDateStr);
+        builder.addMetric("test")
+                .setDataPoint(System.currentTimeMillis(),1D)
+                .addTag("container", "01_000001");
+        try {
+            String message = builder.build(true);
+            String response = HTTPRequest.sendPost(databaseURI, message);
+            if (!response.matches("\\s*")) {
+                System.out.printf("Unexpected response: %s\n", response);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private Double parseDoubleStrWithUnit(String doubleStr) {

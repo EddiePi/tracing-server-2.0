@@ -10,6 +10,9 @@ tracer.log.mr-api.path          ../conf/mr.api
 tracer.log.custom-api.enabled   false
 tracer.log.custom-api.path      ./custom.api
 
+tracer.log.testmode.enabled     false
+tracer.log.testmode.dir         /home/eddie/testdir/test.log
+
 tracer.tsdb.server              localhost:4242
 
 tracer.system-monitor.enabled   true
