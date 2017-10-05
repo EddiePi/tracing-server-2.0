@@ -230,7 +230,7 @@ public class LogReaderManager {
             resourceManagerReadThread.start();
         }
         if (!isMaster && testMode) {
-            resourceManagerReadThread.start();
+            testReaderThread.start();
         }
     }
 

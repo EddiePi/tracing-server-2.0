@@ -80,7 +80,7 @@ public class KafkaToTsdbChannel {
                         removeEventMessage(value.split(" ")[0]);
                         continue;
                     }
-                    if (key.matches("testlog")) {
+                    if (key.matches("testlog-log")) {
                         sendTestMessage(value);
                         continue;
                     }
@@ -118,7 +118,6 @@ public class KafkaToTsdbChannel {
                 if (builder.getMetrics().size() > 0) {
                     try {
                         String message = builder.build(true);
-
                         // TODO: maintain the connection for performance
                         String response = HTTPRequest.sendPost(databaseURI, message);
                         if (!response.matches("\\s*")) {
@@ -552,22 +551,26 @@ public class KafkaToTsdbChannel {
     }
 
     private void sendTestMessage(String line) {
-        Long time = Long.parseLong(line);
-        Date logDate = new Date(time);
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        String logDateStr = format.format(logDate);
-        String curDateStr = format.format(new Date());
-        System.out.printf("log time: %s, cur time: %s\n", logDateStr, curDateStr);
-        builder.addMetric("test")
-                .setDataPoint(System.currentTimeMillis(),1D)
-                .addTag("container", "01_000001");
         try {
+            Long time = Long.parseLong(line);
+            Date logDate = new Date(time);
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+            String logDateStr = format.format(logDate);
+            Long curTime = System.currentTimeMillis();
+            String curDateStr = format.format(curTime);
+            Long deltaTime = curTime - time;
+            System.out.printf(deltaTime + "\n");
+            builder.addMetric("test")
+                    .setDataPoint(System.currentTimeMillis(), 1D)
+                    .addTag("container", "01_000001");
             String message = builder.build(true);
             String response = HTTPRequest.sendPost(databaseURI, message);
             if (!response.matches("\\s*")) {
                 System.out.printf("Unexpected response: %s\n", response);
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NumberFormatException e) {
             e.printStackTrace();
         }
     }
