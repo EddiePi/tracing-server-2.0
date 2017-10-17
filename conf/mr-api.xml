@@ -23,7 +23,7 @@
         </group>
         <group>
             <name>spill.value</name>
-            <type>event</type>
+            <type>state</type>
             <isFinish>false</isFinish>
             <value>vbyte</value>
         </group>
